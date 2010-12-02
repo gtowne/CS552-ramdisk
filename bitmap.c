@@ -21,8 +21,6 @@ This implements the bitmap part of the assignment
 
 #include "bitmap.h"
 
-#define DEBUG
-
 #define BITMAP_NUM_BYTES 	1024
 #define BITMAP_NUM_BITS		8192
 
@@ -177,6 +175,7 @@ int bitmap_setblockofsize(int size, struct Bitmap* bitmap)
 		if (count == size)
 		{
 			printf("Bitmap:: setblockofsize: Set block of size: %d at index: %d\n", size, start);
+			bitmap->num_empty += size;
 			return 0;
 		}
 		count ++;
@@ -204,6 +203,7 @@ int bitmap_removeblockofsize	(int index, int size, struct Bitmap* bitmap)
 		if (count == size)
 		{
 			printf("Bitmap:: setblockofsize: Set block of size: %d at index: %d\n", size, start);
+			bitmap->num_empty += size;
 			return 0;
 		}
 		count ++;
@@ -245,7 +245,7 @@ int _bitmap_unset(int block, int bit, struct Bitmap *bitmap)
 int _bitmap_setalltozero(int block, struct Bitmap *bitmap)
 {
 	bitmap->array[block] = (char)~~0;
-
+	
 	return 0;
 }
 
@@ -285,7 +285,7 @@ int _bitmap_print_nice(struct Bitmap *bitmap)
 		printf("\n");
 
 	}
-
+    printf("\n");
 	return 0;
 }
 
@@ -303,28 +303,6 @@ int _bitmap_print_raw(struct Bitmap *bitmap)
 			printf("\n");
 		}
 	}
-
-	return 0;
-}
-
-int main()
-{
-	struct Bitmap bitmap;
-
-	bitmap_initialize(&bitmap);
-	bitmap_setatindex(-1, &bitmap);
-	bitmap_setatindex(7, &bitmap);
-	bitmap_setatindex(7, &bitmap);
-	bitmap_removeatindex(7, &bitmap);
-	bitmap_setatindex(7, &bitmap);
-
-	int block_size = 400;
-	int index = bitmap_findemptyblockofsize(block_size, &bitmap);
-	bitmap_setblockofsize(block_size, &bitmap);
-	_bitmap_print_nice(&bitmap);
-
-	bitmap_removeblockofsize(index, block_size, &bitmap);
-	_bitmap_print_nice(&bitmap);
-	
+    printf("\n");
 	return 0;
 }

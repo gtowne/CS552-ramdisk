@@ -30,7 +30,7 @@ int bitmap_initialize			(struct Bitmap* bitmap);								//Initializes all bits t
 int bitmap_setatindex			(int index, struct Bitmap* bitmap);					//Sets bit at an index in the bitmap
 int bitmap_removeatindex			(int index, struct Bitmap* bitmap);					//Unsets bit at an index in the bitmap
 int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap);					//Finds first empty block of given size in bitmap
-int bitmap_setblockofsize		(int size, struct Bitmap* bitmap);				//Sets the next size bites in the bitmap
+int bitmap_setblockofsize		(int size, struct Bitmap* bitmap);				    //Sets the next size bites in the bitmap
 int bitmap_removeblockofsize		(int index, int size, struct Bitmap* bitmap);		//Removes a block of size in the bitmap
 
 int _bitmap_isset				(int block, int bit, struct Bitmap* bitmap);			//Checks if a bit inside a char is set
