@@ -37,7 +37,7 @@ int _bitmap_isset               (int block, int bit, struct Bitmap* bitmap);    
 int _bitmap_isset_b             (int bitnum, struct Bitmap *bitmap);                //Ditto, but with bit num
 int _bitmap_set                 (int block, int bit, struct Bitmap* bitmap);        //Sets a bit inside a char
 int _bitmap_unset               (int block, int bit, struct Bitmap* bitmap);        //Unsets a bit inside a char
-int _bitmap_setalltozero	        (int block, struct Bitmap* bitmap);                 //Sets all bits in a char to zero
+int _bitmap_setalltozero        (int block, struct Bitmap* bitmap);                 //Sets all bits in a char to zero
 
 int _bitmap_printhchar          (char a);                                           //Prints bits in a char
 int _bitmap_print_nice          (struct Bitmap* bitmap);                            //Prints bits in bitmap with block num
