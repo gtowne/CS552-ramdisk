@@ -176,7 +176,7 @@ int bitmap_setblockofsize(int size, struct Bitmap* bitmap)
 		{
 			printf("Bitmap:: setblockofsize: Set block of size: %d at index: %d\n", size, start);
 			bitmap->num_empty += size;
-			return 0;
+			return index;
 		}
 		count ++;
 		index ++;

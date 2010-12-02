@@ -49,3 +49,35 @@ int str_equals(char* str1, char* str2, int max_chars) {
 	
 	return 1;
 }
+
+int str_path_number(char* pathname)
+{
+    int count = 0;
+    int index = 0;
+    
+    while (1==1)
+    {
+        if (pathname[index] == *("\0"))
+        {
+            break;
+        }
+
+        if (pathname[index] == *("/"))
+        {
+            count ++;
+        }
+
+        index ++;
+    }
+
+    return count;
+}
+
+
+
+
+
+
+
+
+

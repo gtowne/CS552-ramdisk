@@ -32,4 +32,10 @@ int str_copy(char* src, char* dst, int max_chars);
 // equal
 int str_equals(char* str1, char* str2, int max_chars);
 
+
+// returns the number of "/" in the pathname...not sure if this
+// is useful
+
+int str_path_number(char* pathname);
+
 #endif
