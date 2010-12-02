@@ -26,21 +26,21 @@ struct Bitmap //Bitmap struct
   unsigned char array[1024];
 };
 
-int bitmap_initialize           (struct Bitmap* bitmap);	                            //Initializes all bits to 0
+int bitmap_initialize           (struct Bitmap* bitmap);                            //Initializes all bits to 0
 int bitmap_setatindex           (int index, struct Bitmap* bitmap);                 //Sets bit at an index in the bitmap
-int bitmap_removeatindex	        (int index, struct Bitmap* bitmap);                 //Unsets bit at an index in the bitmap
+int bitmap_removeatindex        (int index, struct Bitmap* bitmap);                 //Unsets bit at an index in the bitmap
 int bitmap_findemptyblockofsize (int size, struct Bitmap* bitmap);                  //Finds first empty block of given size in bitmap
 int bitmap_setblockofsize       (int size, struct Bitmap* bitmap);                  //Sets the next size bites in the bitmap
 int bitmap_removeblockofsize	    (int index, int size, struct Bitmap* bitmap);       //Removes a block of size in the bitmap
 
-int _bitmap_isset               (int block, int bit, struct Bitmap* bitmap);	        //Checks if a bit inside a char is set
-int _bitmap_isset_b             (int bitnum, struct Bitmap *bitmap);	                //Ditto, but with bit num
-int _bitmap_set                 (int block, int bit, struct Bitmap* bitmap);	        //Sets a bit inside a char
-int _bitmap_unset               (int block, int bit, struct Bitmap* bitmap);	        //Unsets a bit inside a char
+int _bitmap_isset               (int block, int bit, struct Bitmap* bitmap);        //Checks if a bit inside a char is set
+int _bitmap_isset_b             (int bitnum, struct Bitmap *bitmap);                //Ditto, but with bit num
+int _bitmap_set                 (int block, int bit, struct Bitmap* bitmap);        //Sets a bit inside a char
+int _bitmap_unset               (int block, int bit, struct Bitmap* bitmap);        //Unsets a bit inside a char
 int _bitmap_setalltozero	        (int block, struct Bitmap* bitmap);                 //Sets all bits in a char to zero
 
 int _bitmap_printhchar          (char a);                                           //Prints bits in a char
-int _bitmap_print_nice          (struct Bitmap* bitmap);	                            //Prints bits in bitmap with block num
-int _bitmap_print_raw           (struct Bitmap *bitmap);	                            //Prints bits in bitmap all at once
+int _bitmap_print_nice          (struct Bitmap* bitmap);                            //Prints bits in bitmap with block num
+int _bitmap_print_raw           (struct Bitmap *bitmap);                            //Prints bits in bitmap all at once
 
 #endif
