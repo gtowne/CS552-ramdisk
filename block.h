@@ -38,7 +38,7 @@ struct DirectoryEntry {
 };
 
 struct IndirectStorageBlock {
-	struct Block *children[BLOCK_PTR_BYTES];
+	struct Block *children[BLOCK_PTRS_PER_STORAGE_BLOCK];
 };
 
 struct DirectoryBlock {
@@ -94,7 +94,7 @@ struct Block* block_at(struct Block *storage_block, int index);
 int _null_out_block(struct Block *block);
 
 // overwrite a directory entry with zeroes
-int _null_out_directory_entry(struct DirectoryEntry *entry)
+int _null_out_directory_entry(struct DirectoryEntry *entry);
 
 // returns 1 iff entry is free, -1 otherwise
 int _directory_entry_is_free(struct DirectoryEntry *entry);

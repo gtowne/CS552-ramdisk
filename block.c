@@ -17,6 +17,7 @@
 
 #include "block.h"
 
+
 int allocate_regular_block(struct Block *block) {
 	// overwrite block with zeroes
 	_null_out_block(block);
@@ -38,7 +39,7 @@ int allocate_directory_block(struct Block *block) {
 	
 	int i = 0;
 	for (i = 0; i < ENTRIES_PER_DIRECTORY; i++) {
-		_null_out_directory_entry(dirBlock->entries[i]);
+		_null_out_directory_entry(&(dirBlock->entries[i]));
 	}
 	
 	return 1;
@@ -61,8 +62,8 @@ int get_directory_inode_index(struct Block *block, char* name, unsigned short in
 		
 		// if the name of this one matches the target name
 		// set its index and return
-		if (str_equals(entries[i], name, DIR_ENTRY_NAME_BYTES)) {
-			*index = entries[i]->inode_index;
+		if (1 == str_equals((entries[i].name), name, DIR_ENTRY_NAME_BYTES)) {
+			*index = entries[i].inode_index;
 			
 			return 1;
 		}
@@ -81,7 +82,7 @@ int add_directory_entry(struct Block *block, char* name, unsigned short inode) {
 		return -1;
 	}
 	
-	struct DirectoryEntry *thisEntry = dirBlock->entries[firstFree];
+	struct DirectoryEntry *thisEntry = &(dirBlock->entries[firstFree]);
 	
 	str_copy(name, thisEntry->name, DIR_ENTRY_NAME_BYTES);
 	
@@ -93,13 +94,13 @@ int add_directory_entry(struct Block *block, char* name, unsigned short inode) {
 int remove_directory_entry(struct Block *block, char* name) {
 	struct DirectoryBlock *dirBlock = (struct DirectoryBlock *) block;
 	
-	int entryIndex = _index_of_directory_with_name(*dirBlock, name);
+	int entryIndex = _index_of_directory_with_name(dirBlock, name);
 	
 	if (entryIndex == -1) {
 		return -1;
 	}
 	
-	_null_out_directory_entry(dirBlock, entryIndex);
+	_null_out_directory_entry(&(dirBlock->entries[entryIndex]));
 	
 	return 1;
 }
@@ -121,7 +122,7 @@ int add_block_to_indirect_storage(struct Block *storage_block, struct Block* new
 struct Block* block_at(struct Block *storage_block, int index) {
 	struct IndirectStorageBlock *this_storage_block = (struct IndirectStorageBlock *) storage_block;
 	
-	return this_storage_block->children[i];
+	return this_storage_block->children[index];
 }
 
 
@@ -161,7 +162,7 @@ int _first_free_directory_entry(struct DirectoryBlock *block) {
 	
 	int i;
 	for (i = 0; i < ENTRIES_PER_DIRECTORY; i++) {
-		if (_directory_entry_is_free(entries[i])) {
+		if (1 == _directory_entry_is_free(&entries[i])) {
 			return i;
 		}
 	}
@@ -172,7 +173,7 @@ int _first_free_directory_entry(struct DirectoryBlock *block) {
 int _index_of_directory_with_name(struct DirectoryBlock *block, char* name) {
 	int i;
 	for (i = 0; i < ENTRIES_PER_DIRECTORY; i++) {
-		if (str_equals(block->entries[i]->name, name)) {
+		if (str_equals(block->entries[i].name, name, DIR_ENTRY_NAME_BYTES)) {
 			return i;
 		}
 	}
@@ -182,11 +183,11 @@ int _index_of_directory_with_name(struct DirectoryBlock *block, char* name) {
 
 
 int _first_free_block_ptr_loc(struct IndirectStorageBlock *block) {
-	struct Block *children = block->children;
+	struct Block *children = block->children[0];
 	
 	int i;
 	for (i = 0; i < BLOCK_PTRS_PER_STORAGE_BLOCK; i++) {
-		if (children[i] == NULL) {
+		if (&children[i] == (void*)NULL) {
 			return i;
 		}
 	}
