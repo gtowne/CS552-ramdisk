@@ -20,16 +20,19 @@ This implements the bitmap part of the assignment
 #define RAMDISK_H_
 
 //#include "superblock.h"
-//#include "inode.h"
+#include "inode.h"
 #include "bitmap.h"
 #include "block.h"
+
+#define MAX_FILENAME_LENGTH 512
 
 struct Ramdisk //Ramdisk struct
 {
     //struct SuperBlock;       superblock;
-    //struct IndexNode[1024];  inodes;
-    Bitmap           bitmap;
-    //struct Block[8192]      blocks;
+    struct Block      superblock;
+    struct IndexNode  inodes[INODES];
+    struct Bitmap     bitmap;
+    struct Block      blocks[FS_BLOCKS];
 };
 
 
@@ -48,5 +51,13 @@ int rd_readdir  (int fd, char *address);
 // Other Functions
 
 int _ramdisk_parsepath  (char *pathname); //Parses the pathname to an inode index (parent inode of the requested file)
+
+
+//@TODO: NEED ALLOCATE BLOCK FUNCTION
+struct Block* _ramdisk_allocate_block(struct Ramdisk* iRamDisk);
+int _ramdisk_deallocate_block(struct Ramdisk* iRamDisk, struct Block* iBlock);
+
+int _ramdisk_allocate_inode(struct Ramdisk* ramdisk, enum NodeType type);
+int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index);
 
 #endif

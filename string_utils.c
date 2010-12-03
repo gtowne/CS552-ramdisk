@@ -15,7 +15,7 @@
  */
 
 #include "string_utils.h"
-#include <stdio.h>
+//#include <stdio.h>
 
 
 int str_copy(char* src, char* dst, int max_chars) {
@@ -48,6 +48,49 @@ int str_equals(char* str1, char* str2, int max_chars) {
 	}
 	
 	return 1;
+}
+
+int str_len(char* str, int max_chars)
+{
+  if(str == NULL)
+  {
+    return 0;
+  }
+  
+  int i;
+  for (i = 0; i < max_chars; i++) {
+    if(str[i]=='\0')
+    {
+      return i;
+    }
+  }
+
+}
+
+int str_next_token(char* str, int start_pos, int max_chars, char delim)
+{
+  int i;
+  for(i=start_pos; i<max_chars; i++)
+  {
+    if(str[i] == delim || str[i] == '\0')
+    {
+      return i;
+    }
+  }
+  return max_chars;
+}
+
+int str_last_delimiter(char* str, int last_pos, char delim)
+{
+  int i;
+  for(i=last_pos; i>=0; i--)
+  {
+    if(str[i] == delim)
+    {
+      return i;
+    }
+  }
+  return -1;
 }
 
 int str_path_number(char* pathname)

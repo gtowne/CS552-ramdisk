@@ -16,17 +16,20 @@ Definition for block data structure for regular or directory files
  */
 
 #ifndef BLOCK_H
-#define Block_H
-
+#define BLOCK_H
+#include "defines.h"
 #include "string_utils.h"
 
-#define NULL 0x0
-#define BLOCK_BYTES 256
-#define DIR_ENTRY_BYTES 16
-#define DIR_ENTRY_NAME_BYTES 14
-#define ENTRIES_PER_DIRECTORY BLOCK_BYTES/DIR_ENTRY_BYTES
-#define BLOCK_PTR_BYTES 4
-#define BLOCK_PTRS_PER_STORAGE_BLOCK BLOCK_BYTES/BLOCK_PTR_BYTES
+//const int DIRECTORY_ENTRIES_PER_BLOCK=BLOCK_BYTES/sizeof(DirectoryEntry);
+#define DIRECTORY_ENTRIES_PER_BLOCK 16
+
+
+
+//#define ENTRIES_PER_DIRECTORY BLOCK_BYTES/DIR_ENTRY_BYTES
+//#define BLOCK_PTR_BYTES 4
+
+//const int BLOCK_PTRS_PER_STORAGE_BLOCK=BLOCK_BYTES/sizeof(Block*);
+#define BLOCK_PTRS_PER_STORAGE_BLOCK 64
 
 struct Block {
 	char memory [BLOCK_BYTES];
@@ -42,7 +45,7 @@ struct IndirectStorageBlock {
 };
 
 struct DirectoryBlock {
-	struct DirectoryEntry entries[ENTRIES_PER_DIRECTORY];
+	struct DirectoryEntry entries[DIRECTORY_ENTRIES_PER_BLOCK];
 };
 
 // FUNCTIONS TO MANIPULATE ARBITRARY BLOCKS

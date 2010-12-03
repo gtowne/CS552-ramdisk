@@ -21,16 +21,16 @@ This implements the bitmap part of the assignment
 
 #include "bitmap.h"
 
-#define BITMAP_NUM_BYTES 	1024
-#define BITMAP_NUM_BITS		8192
+//#define BITMAP_NUM_BYTES 	1024
+//#define BITMAP_NUM_BITS		8192
 
 int bitmap_initialize(struct Bitmap *bitmap)
 {
 	int ii;
 
 	// Initialize control variables
-	bitmap->size 			= BITMAP_NUM_BITS;
-	bitmap->num_empty	 	= BITMAP_NUM_BITS;
+	bitmap->size 			= TOTAL_BLOCKS;
+	bitmap->num_empty	 	= TOTAL_BLOCKS;
 
 	// Initialize all bits to zero
 	for (ii = 0; ii < BITMAP_NUM_BYTES; ii++)
@@ -43,9 +43,11 @@ int bitmap_initialize(struct Bitmap *bitmap)
 
 int bitmap_setatindex(int index, struct Bitmap *bitmap)
 {
-	if (index < 0 || index > BITMAP_NUM_BITS-1)
+	if (index < 0 || index > TOTAL_BLOCKS-1)
 	{
+#ifdef DEBUG
 		printf("Bitmap:: setatindex: index out of range\n");
+#endif
 		return -1;
 	}
 	
@@ -72,7 +74,7 @@ int bitmap_setatindex(int index, struct Bitmap *bitmap)
 
 int bitmap_removeatindex(int index, struct Bitmap *bitmap)
 {
-	if (index < 0 || index > BITMAP_NUM_BITS-1)
+	if (index < 0 || index > TOTAL_BLOCKS-1)
 	{
 		printf("Bitmap:: removeatindex: index out of range\n");
 		return -1;
@@ -109,7 +111,7 @@ int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap)
 	while (1==1)
 	{	
 		// Handle wrap around case
-		if (index == BITMAP_NUM_BITS - 1)
+		if (index == TOTAL_BLOCKS - 1)
 		{
 			index = 0;
 		}
@@ -138,7 +140,7 @@ int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap)
 		}
 
 		// Traveled the whole thing and did not find anything
-		if (traveled == BITMAP_NUM_BITS)
+		if (traveled == TOTAL_BLOCKS)
 		{
 			printf("Bitmap:: findemptyblockofsize: no empty blocks of that size\n");
 			return -1;
@@ -148,6 +150,20 @@ int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap)
 	}
 
 	return -1;
+}
+
+int bitmap_get_one_block(struct Bitmap* bitmap)
+{
+	if (bitmap->num_empty == 0)
+	{
+		printf("Bitmap:: setblockofsize: no more empty blocks\n");
+		return -1;
+	}
+
+	int index = bitmap_findemptyblockofsize(1, bitmap);
+	bitmap_setatindex(index, bitmap);
+	bitmap->num_empty --;
+	return index;
 }
 
 int bitmap_setblockofsize(int size, struct Bitmap* bitmap)
@@ -165,7 +181,7 @@ int bitmap_setblockofsize(int size, struct Bitmap* bitmap)
 	while (1==1)
 	{
 		// Handle wrap around case
-		if (index == BITMAP_NUM_BITS - 1)
+		if (index == TOTAL_BLOCKS - 1)
 		{
 			index = 0;
 		}
@@ -193,7 +209,7 @@ int bitmap_removeblockofsize	(int index, int size, struct Bitmap* bitmap)
 	while (1==1)
 	{
 		// Handle wrap around case
-		if (index == BITMAP_NUM_BITS - 1)
+		if (index == TOTAL_BLOCKS - 1)
 		{
 			index = 0;
 		}

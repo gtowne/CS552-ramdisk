@@ -38,7 +38,7 @@ int allocate_directory_block(struct Block *block) {
 	struct DirectoryBlock *dirBlock = (struct DirectoryBlock *) block;
 	
 	int i = 0;
-	for (i = 0; i < ENTRIES_PER_DIRECTORY; i++) {
+	for (i = 0; i < DIRECTORY_ENTRIES_PER_BLOCK; i++) {
 		_null_out_directory_entry(&(dirBlock->entries[i]));
 	}
 	
@@ -58,7 +58,7 @@ int get_directory_inode_index(struct Block *block, char* name, unsigned short in
 	
 	// search through all directory entries
 	int i;
-	for (i = 0; i < ENTRIES_PER_DIRECTORY; i++) {
+	for (i = 0; i < DIRECTORY_ENTRIES_PER_BLOCK; i++) {
 		
 		// if the name of this one matches the target name
 		// set its index and return
@@ -150,7 +150,7 @@ int _null_out_directory_entry(struct DirectoryEntry *entry) {
 }
 
 int _directory_entry_is_free(struct DirectoryEntry *entry) {
-	if (entry->inode_index == 0 && entry->name[0] == NULL) {
+  if (entry->inode_index == 0 && entry->name[0] == '\0') {
 		return 1;
 	}
 	
@@ -158,21 +158,25 @@ int _directory_entry_is_free(struct DirectoryEntry *entry) {
 }
 
 int _first_free_directory_entry(struct DirectoryBlock *block) {
-	struct DirectoryEntry* entries = block->entries;
-	
+  //struct DirectoryEntry** entries = block->entries;
+  if(block == NULL)
+  {
+    return -1;
+  }
+
 	int i;
-	for (i = 0; i < ENTRIES_PER_DIRECTORY; i++) {
-		if (1 == _directory_entry_is_free(&entries[i])) {
+	for (i = 0; i < DIRECTORY_ENTRIES_PER_BLOCK; i++) {
+	  if (1 == _directory_entry_is_free(&block->entries[i])) {
 			return i;
 		}
 	}
 	
-	return -1;
+	return DIRECTORY_ENTRIES_PER_BLOCK;
 }
 
 int _index_of_directory_with_name(struct DirectoryBlock *block, char* name) {
 	int i;
-	for (i = 0; i < ENTRIES_PER_DIRECTORY; i++) {
+	for (i = 0; i < DIRECTORY_ENTRIES_PER_BLOCK; i++) {
 		if (str_equals(block->entries[i].name, name, DIR_ENTRY_NAME_BYTES)) {
 			return i;
 		}
@@ -183,11 +187,9 @@ int _index_of_directory_with_name(struct DirectoryBlock *block, char* name) {
 
 
 int _first_free_block_ptr_loc(struct IndirectStorageBlock *block) {
-	struct Block *children = block->children[0];
-	
 	int i;
 	for (i = 0; i < BLOCK_PTRS_PER_STORAGE_BLOCK; i++) {
-		if (&children[i] == (void*)NULL) {
+		if (block->children[i] == NULL) {
 			return i;
 		}
 	}

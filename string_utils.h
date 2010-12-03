@@ -16,7 +16,9 @@
 #ifndef STRING_UTILS_H
 #define STRING_UTILS_H
 
+#ifndef NULL
 #define NULL 0x0
+#endif
 
 // copy string from src to dst buffer, max_chars is
 // maximum number of characters to copy INCLUDING null
@@ -31,6 +33,12 @@ int str_copy(char* src, char* dst, int max_chars);
 // note - strings considered equal if first max_chars are
 // equal
 int str_equals(char* str1, char* str2, int max_chars);
+
+int str_len(char* str, int max_chars);
+
+int str_next_token(char* str, int start_pos, int max_chars, char delim);
+
+int str_last_delimiter(char* str, int last_pos, char delim);
 
 
 // returns the number of "/" in the pathname...not sure if this
