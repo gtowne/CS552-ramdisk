@@ -1,31 +1,33 @@
+
+GCC = gcc
 CXXFLAGS = -g -DDEBUG
 
-all: BitmapTest RamdiskTest
+all: bitmapTest ramdiskTest
 
-RamdiskTest: ramdisk_test.c Ramdisk.o Bitmap.o Block.o string_utils.o
-	gcc -o RamdiskTest $(CXXFLAGS) ramdisk_test.c Ramdisk.o Bitmap.o Block.o string_utils.o
+ramdiskTest: ramdisk_test.c ramdisk.o bitmap.o block.o inode.o string_utils.o
+	$(GCC) -o ramdiskTest $(CXXFLAGS) ramdisk_test.c ramdisk.o bitmap.o block.o inode.o string_utils.o 
 
-InodeTest: inode_test.c Inode.o
-	gcc -o InodeTest $(CXXFLAGS) inode_test.c Inode.o
+inodeTest: inode_test.c inode.o
+	$(GCC) -o inodeTest $(CXXFLAGS) inode_test.c inode.o
 
-BitmapTest: bitmap_test.c Bitmap.o
-	gcc -o BitmapTest $(CXXFLAGS) bitmap_test.c Bitmap.o
+bitmapTest: bitmap_test.c bitmap.o
+	$(GCC) -o bitmapTest $(CXXFLAGS) bitmap_test.c bitmap.o
 
 
-Ramdisk.o: Ramdisk.h Ramdisk.c Bitmap.o Block.o string_utils.o
-	gcc -c $(CXXFLAGS) Ramdisk.c
+ramdisk.o: ramdisk.h ramdisk.c bitmap.h block.h inode.h string_utils.h
+	$(GCC) -c $(CXXFLAGS) ramdisk.c
 
-Inode.o: Inode.h Inode.c
-	gcc -c $(CXXFLAGS) Inode.c
+inode.o: inode.h inode.c block.h ramdisk.h string_utils.h
+	$(GCC) -c $(CXXFLAGS) inode.c
 
-Bitmap.o: Bitmap.h Bitmap.c
-	gcc -c $(CXXFLAGS) Bitmap.c
+bitmap.o: bitmap.h bitmap.c
+	$(GCC) -c $(CXXFLAGS) bitmap.c
 
-Block.o: Block.h Block.c string_utils.o
-	gcc -c $(CXXFLAGS) Block.c
+block.o: block.h block.c string_utils.h
+	$(GCC) -c $(CXXFLAGS) block.c
 
 string_utils.o: string_utils.h string_utils.c
-	gcc -c $(CXXFLAGS) string_utils.c
+	$(GCC) -c $(CXXFLAGS) string_utils.c
 
 clean:
-	rm *.o BitmapTest RamdiskTest
+	rm *.o bitmapTest ramdiskTest
