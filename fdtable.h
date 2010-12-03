@@ -37,8 +37,7 @@ The FdtableArray just contains a few of these Fdtable structs
 #ifndef FDTABLE_H_
 #define FDTABLE_H_
 
-#define TABLE_SIZE 20
-#define NUM_TABLES 20
+#include "defines.h"
 
 typedef struct FdtableEntry
 {
@@ -70,6 +69,9 @@ int fdtable_seekwithinodenum    (int inodenum, int offset, struct Fdtable *fdtab
 int fdtable_removeatfd          (int fd, struct Fdtable *fdtable);                      //Removes entry given a file descriptor number
 int fdtable_removeatinodenum    (int inodenum, struct Fdtable *fdtable);                //Removes entry given an inode number
 
+int fdtable_inodeforfd          (int fd, struct Fdtable *fdtable);
+int fdtable_positionforfd       (int fd, struct Fdtable *fdtable);                      //Returns the position of the offset
+
 int _fdtable_print              (struct Fdtable *fdtable);                              //Convenience method to print the fd table
 
 /*METHODS FOR ARRAY OF FD TABLES*/
@@ -86,6 +88,9 @@ int fdtable_a_seekwithfd        (int pid, int fd, int offset, struct FdtableArra
 int fdtable_a_seekwithinodenum  (int pid, int inodenum, int offset, struct FdtableArray *fdtablea);
 int fdtable_a_removeatfd        (int pid, int fd, struct FdtableArray *fdtablea);
 int fdtable_a_removeatinodenum  (int pid, int inodenum, struct FdtableArray *fdtablea);
+
+int fdtable_a_inodeforfd        (int pid, int fd, struct FdtableArray *fdtablea);
+int fdtable_a_positionforfd     (int pid, int fd, struct FdtableArray *fdtablea);
 
 int _fdtable_a_print            (struct FdtableArray *fdtablea);
 

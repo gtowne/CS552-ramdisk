@@ -4,8 +4,8 @@ CXXFLAGS = -g -DDEBUG
 
 all: BitmapTest FdtableTest RamdiskTest
 
-RamdiskTest: ramdisk_test.c ramdisk.o bitmap.o block.o inode.o string_utils.o
-	$(GCC) -o RamdiskTest $(CXXFLAGS) ramdisk_test.c ramdisk.o bitmap.o block.o inode.o string_utils.o 
+RamdiskTest: ramdisk_test.c ramdisk.o bitmap.o block.o inode.o Fdtable.o string_utils.o
+	$(GCC) -o RamdiskTest $(CXXFLAGS) ramdisk_test.c ramdisk.o bitmap.o block.o inode.o Fdtable.o string_utils.o 
 
 
 FdtableTest: fdtable_test.c Fdtable.o

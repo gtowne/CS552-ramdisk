@@ -21,8 +21,8 @@ This implements the file descriptor table part of the assignment
 
 #include "fdtable.h"
 
-#define TABLE_SIZE 20
-#define NUM_TABLES 20
+//#define TABLE_SIZE 20
+//#define NUM_TABLES 20
 
 /*METHODS FOR A SINGLE FD TABLE*/
 
@@ -132,6 +132,36 @@ int fdtable_removeatinodenum(int inodenum, struct Fdtable *fdtable)
     return -1;
 }
 
+int fdtable_inodeforfd(int fd, struct Fdtable *fdtable)
+{
+    int ii;
+     
+    for (ii = 0; ii < fdtable->t_size; ii++)
+    {
+        if (fdtable->table[ii].fd == fd)
+        {
+            return fdtable->table[ii].inode_num;
+        }
+    }
+    
+    return -1;
+}
+
+int fdtable_positionforfd(int fd, struct Fdtable *fdtable)
+{
+    int ii;
+     
+    for (ii = 0; ii < fdtable->t_size; ii++)
+    {
+        if (fdtable->table[ii].fd == fd)
+        {
+            return fdtable->table[ii].offset;
+        }
+    }
+    
+    return -1;
+}
+
 int _fdtable_print(struct Fdtable *fdtable)
 {
     int ii;
@@ -181,6 +211,7 @@ int fdtable_a_createentry(int pid, int inodenum, struct FdtableArray *fdtablea)
 {
     int ii;
 
+    // Try to find the table
     for (ii = 0; ii < fdtablea->a_size; ii++)
     {
         if (fdtablea->array[ii].pid == pid)
@@ -188,7 +219,21 @@ int fdtable_a_createentry(int pid, int inodenum, struct FdtableArray *fdtablea)
             return fdtable_createentry(inodenum, (Fdtable*)&(fdtablea->array[ii]));
         }
     }
-        
+
+    // If you couldnt' fint an existing table, then create a new one
+    int retval = fdtable_a_createtable(pid, fdtablea);
+
+    if (retval < 0) return -1;
+
+    // Create entry inside that new table you just created
+    for (ii = 0; ii < fdtablea->a_size; ii++)
+    {
+        if (fdtablea->array[ii].pid == pid)
+        {
+            return fdtable_createentry(inodenum, (Fdtable*)&(fdtablea->array[ii]));
+        }
+    }
+    
     return -1;
 }
 int fdtable_a_seekwithfd(int pid, int fd, int offset, struct FdtableArray *fdtablea)
@@ -242,6 +287,36 @@ int fdtable_a_removeatinodenum(int pid, int inodenum, struct FdtableArray *fdtab
         if (fdtablea->array[ii].pid == pid)
         {
             return fdtable_removeatinodenum(inodenum, (Fdtable*)&(fdtablea->array[ii]));
+        }
+    }
+        
+    return -1;
+}
+
+int fdtable_a_inodeforfd(int pid, int fd, struct FdtableArray *fdtablea)
+{
+    int ii;
+
+    for (ii = 0; ii < fdtablea->a_size; ii++)
+    {
+        if (fdtablea->array[ii].pid == pid)
+        {
+            return fdtable_inodeforfd(fd, (Fdtable*)&(fdtablea->array[ii]));
+        }
+    }
+        
+    return -1;
+}
+
+int fdtable_a_positionforfd(int pid, int fd, struct FdtableArray *fdtablea)
+{
+    int ii;
+
+    for (ii = 0; ii < fdtablea->a_size; ii++)
+    {
+        if (fdtablea->array[ii].pid == pid)
+        {
+            return fdtable_positionforfd(fd, (Fdtable*)&(fdtablea->array[ii]));
         }
     }
         

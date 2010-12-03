@@ -24,6 +24,8 @@ This implements the bitmap part of the assignment
 #include "bitmap.h"
 #include "block.h"
 
+#include "fdtable.h"
+
 #define MAX_FILENAME_LENGTH 512
 
 struct Ramdisk //Ramdisk struct

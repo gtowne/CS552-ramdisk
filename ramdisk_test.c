@@ -3,12 +3,14 @@
 #include "ramdisk.h"
 
 struct Ramdisk ramdisk;
+struct FdtableArray fdtablea;
 
 int main()
 {
-  char name[14] = "/aaaa";
+    char name[14] = "/aaaa";
 
     _ramdisk_initialize(&ramdisk);
+    
     int i;
     for(i=0; i<17; i++)
       {

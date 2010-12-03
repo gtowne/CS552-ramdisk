@@ -25,6 +25,10 @@
 
 #define DIR_ENTRY_NAME_BYTES 14
 
+
+#define TABLE_SIZE 20
+#define NUM_TABLES 20
+
 #endif
 
 

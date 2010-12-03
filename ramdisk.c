@@ -21,6 +21,8 @@ This implements the ramdisk part of the assignment
 
 #include "ramdisk.h"
 
+extern struct FdtableArray fdtablea;
+
 int rd_creat(char *iPathname)
 {
     extern struct Ramdisk ramdisk;
@@ -107,6 +109,20 @@ int rd_open(char *pathname)
 
     int idx = _ramdisk_walk_path(&ramdisk, pathname);
 
+    int pid = getpid();
+
+    int fd = fdtable_a_createentry(pid, idx, &fdtablea);
+    if (fd < 0)
+    {
+        printf("ERROR::: Ramdisk:: rd_open: Could not create entry in fd table\n");
+    }
+
+    #ifdef DEBUG
+    printf("Ramdisk:: rd_open: Opened: %s, fd:%d\n", pathname, fd);
+    #endif
+    
+    return fd;
+    
     /*
     struct IndexNode* node = &(ramdisk.inodes[0]);
     char token[14];
@@ -129,12 +145,21 @@ int rd_open(char *pathname)
     //      and return the index number
     */
     
-    return idx;
+    //return idx;
 }
 
 int rd_close(int fd)
 {
     extern struct Ramdisk ramdisk;
+
+    int pid = getpid();
+    
+    int retval = fdtable_a_removeatfd(pid, fd, &fdtablea);
+    if (retval < 1)
+    {
+        printf("ERROR::: Ramdisk:: close: fdtable problem removing entry\n");
+    }
+    
     //TODO: Everything
     return 0;
 }
@@ -142,12 +167,50 @@ int rd_close(int fd)
 int rd_read(int fd, char* address, int num_bytes)
 {
     extern struct Ramdisk ramdisk;
+
+    int pid = getpid();
+    // Get the inode numer for this file descriptor
+    int idx = fdtable_a_inodeforfd(pid, fd, &fdtablea);
+    if (idx < 1)
+    {
+        printf("ERROR::: Ramdisk:: read: fdtable problem getting inode number\n");
+    }
+    // Find the last position we read/wrote from in the file
+    int pos_in_file = fdtable_a_positionforfd(pid, fd, &fdtablea);
+    if (pos_in_file < 1)
+    {
+        printf("ERROR::: Ramdisk:: read: fdtable problem getting offset\n");
+    }
+    
     //TODO: Everything
+
+    // Update the file's offset
+
+    int retval = fdtable_a_seekwithfd(pid, fd, pos_in_file, &fdtablea);
+    if (retval < 1)
+    {
+        printf("ERROR::: Ramdisk:: read: fdtable problem seeking\n");
+    }
+    
     return 0;
 }
 
 int rd_write(int fd, char* address, int num_bytes)
 {
+    int pid = getpid();
+    // Get the inode numer for this file descriptor
+    int idx = fdtable_a_inodeforfd(pid, fd, &fdtablea);
+    if (idx < 1)
+    {
+        printf("ERROR::: Ramdisk:: write: fdtable problem getting inode number\n");
+    }
+    // Find the last position we read/wrote from in the file
+    int pos_in_file = fdtable_a_positionforfd(pid, fd, &fdtablea);
+    if (pos_in_file < 1)
+    {
+        printf("ERROR::: Ramdisk:: write: fdtable problem getting offset\n");
+    }
+    
   /*
     extern struct Ramdisk ramdisk;
     //TODO: Check if fd exists   
@@ -219,11 +282,27 @@ int rd_write(int fd, char* address, int num_bytes)
 
     //TODO: write to these new found blocks the contents of *address
     */    
+    
+    // Update the file's offset
+    fdtable_a_seekwithfd(pid, fd, pos_in_file, &fdtablea);
+    int retval = fdtable_a_seekwithfd(pid, fd, pos_in_file, &fdtablea);
+    if (retval < 1)
+    {
+        printf("ERROR::: Ramdisk:: write: fdtable problem seeking\n");
+    }
+    
     return 0;
 }
 
 int rd_seek(int fd, int offset)
 {
+    int pid = getpid();
+    int retval = fdtable_a_seekwithfd(pid, fd, offset, &fdtablea);
+    if (retval < 0)
+    {
+        printf("ERROR::: Ramdisk:: seek: could not seek\n");
+    }
+
     //TODO: everything
     return 0;
 }
@@ -231,6 +310,17 @@ int rd_seek(int fd, int offset)
 int rd_unlink(char *pathname)
 {
     extern struct Ramdisk ramdisk;
+
+    int idx = _ramdisk_walk_path(&ramdisk, pathname);
+
+    int pid = getpid();
+    
+    int retval = fdtable_a_removeatinodenum(pid, idx, &fdtablea);
+    if(retval < 0)
+    {
+        printf("ERROR::: Ramdisk:: unlink: Could not unlink %s\n", pathname);
+    }
+    
     /*
     // Take care of the path
     int inodeofpath = _ramdisk_parsepath(pathname);
@@ -250,6 +340,16 @@ int rd_unlink(char *pathname)
 
 int rd_readdir(int fd, char *address)
 {
+    int pid = getpid();
+    // Get the inode numer for this file descriptor
+    int idx = fdtable_a_inodeforfd(pid, fd, &fdtablea);
+    // Find the last position we read/wrote from in the file
+    if (idx < 1)
+    {
+        printf("ERROR::: Ramdisk:: readir: fdtable problem\n");
+    }
+
+    
     //TODO: everything
     return 0;
 }
@@ -294,6 +394,8 @@ int _ramdisk_initialize(struct Ramdisk* ramdisk)
 
   //we know we'll have to put something here eventually, so allocate a block now.
   inode_add_block(&(ramdisk->inodes[0]), ramdisk);
+
+  fdtable_a_initialize(&fdtablea);
 
   return 0;
 }
@@ -383,9 +485,9 @@ int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index)
   return 0;
 }
 
- int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* parent,
+int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* parent,
 				  char* name, enum NodeType type)
- {
+{
    if(parent == NULL)
    {
      return -1;
