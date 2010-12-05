@@ -90,6 +90,11 @@ int add_block_to_indirect_storage(struct Block *storage_block, struct Block* new
 // return NULL if there is no block pointed to here
 struct Block* block_at(struct Block *storage_block, int index);
 
+//copy memory from the block to the destination
+//start at offset. copy until numBytes or the end of the block.
+//return the number of bytes written
+int block_copy_out(struct Block* block, char* dst, int offset, int numBytes);
+
 
 // INTERNAL FUNCTIONS
 

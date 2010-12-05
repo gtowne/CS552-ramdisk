@@ -52,14 +52,10 @@ int rd_readdir  (int fd, char *address);
 
 // Other Functions
 
-int _ramdisk_parsepath  (char *pathname); //Parses the pathname to an inode index (parent inode of the requested file)
+//int _ramdisk_parsepath  (char *pathname); //Parses the pathname to an inode index (parent inode of the requested file)
 
 
-//@TODO: NEED ALLOCATE BLOCK FUNCTION
 struct Block* _ramdisk_allocate_block(struct Ramdisk* iRamDisk);
 int _ramdisk_deallocate_block(struct Ramdisk* iRamDisk, struct Block* iBlock);
-
-int _ramdisk_allocate_inode(struct Ramdisk* ramdisk, enum NodeType type);
-int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index);
 
 #endif

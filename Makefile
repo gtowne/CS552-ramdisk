@@ -4,12 +4,12 @@ CXXFLAGS = -g -DDEBUG
 
 all: BitmapTest FdtableTest RamdiskTest
 
-RamdiskTest: ramdisk_test.c ramdisk.o bitmap.o block.o inode.o Fdtable.o string_utils.o
-	$(GCC) -o RamdiskTest $(CXXFLAGS) ramdisk_test.c ramdisk.o bitmap.o block.o inode.o Fdtable.o string_utils.o 
+RamdiskTest: ramdisk_test.c ramdisk.o bitmap.o block.o inode.o fdtable.o string_utils.o
+	$(GCC) -o RamdiskTest $(CXXFLAGS) ramdisk_test.c ramdisk.o bitmap.o block.o inode.o fdtable.o string_utils.o 
 
 
 FdtableTest: fdtable_test.c Fdtable.o
-	gcc -o FdtableTest $(CXXFLAGS) fdtable_test.c Fdtable.o	
+	gcc -o FdtableTest $(CXXFLAGS) fdtable_test.c fdtable.o	
 
 InodeTest: inode_test.c inode.o
 	gcc -o InodeTest $(CXXFLAGS) inode_test.c inode.o
@@ -22,8 +22,8 @@ ramdisk.o: ramdisk.h ramdisk.c bitmap.h block.h inode.h string_utils.h
 	$(GCC) -c $(CXXFLAGS) ramdisk.c
 
 
-Fdtable.o: Fdtable.h Fdtable.c
-	gcc -c $(CXXFLAGS) Fdtable.c
+Fdtable.o: fdtable.h fdtable.c
+	gcc -c $(CXXFLAGS) fdtable.c
 
 inode.o: inode.h inode.c block.h ramdisk.h string_utils.h
 	$(GCC) -c $(CXXFLAGS) inode.c

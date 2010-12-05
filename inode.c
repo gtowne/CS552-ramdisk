@@ -122,6 +122,8 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   struct Block* pointerblock;
   struct Block** table;
 
+  //printf("Inode:: add_block\n");
+
   struct Block* block = _ramdisk_allocate_block(iRamDisk);
   if(block == NULL)
   {
@@ -236,10 +238,24 @@ void _pointerblock_clear_block(Block* iBlock, Ramdisk* iRamDisk)
 @param[in]  Ramdisk iRamDisk   the Ramdisk structure itself, 
                                (to deallocate blocks)
 */
-void inode_release(struct IndexNode* iNode,
+int inode_release(struct IndexNode* iNode,
 		   struct Ramdisk* iRamDisk)
 {
+  if(iNode == NULL || iRamDisk == NULL)
+  {
+    return -1;
+  }
 
+  int i;
+  // if it's in the direct pointers, you are done
+  for(i=0; i<IndexNodeDirectPointers; i++)
+  {
+    if(iNode->directPointer[i] != NULL)
+    {
+      _ramdisk_deallocate_block(iRamDisk, iNode->directPointer[i]);
+    }
+  }
+  return 1;
 }
 
 

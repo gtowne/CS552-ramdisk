@@ -80,7 +80,7 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
 @param[in]  Ramdisk iRamDisk   the Ramdisk structure itself, 
                                (to deallocate blocks)
 */
-void inode_release(struct IndexNode* iNode,
+int inode_release(struct IndexNode* iNode,
 		   struct Ramdisk* iRamDisk);
 
 #endif
