@@ -72,6 +72,8 @@ int fdtable_removeatinodenum    (int inodenum, struct Fdtable *fdtable);        
 int fdtable_inodeforfd          (int fd, struct Fdtable *fdtable);
 int fdtable_positionforfd       (int fd, struct Fdtable *fdtable);                      //Returns the position of the offset
 
+int fdtable_checkforinode       (int inodenum, struct Fdtable *fdtable);
+
 int _fdtable_print              (struct Fdtable *fdtable);                              //Convenience method to print the fd table
 
 /*METHODS FOR ARRAY OF FD TABLES*/
@@ -91,6 +93,9 @@ int fdtable_a_removeatinodenum  (int pid, int inodenum, struct FdtableArray *fdt
 
 int fdtable_a_inodeforfd        (int pid, int fd, struct FdtableArray *fdtablea);
 int fdtable_a_positionforfd     (int pid, int fd, struct FdtableArray *fdtablea);
+
+// Checks if someone is using the inode inodenum, return 1 if soomeone else is using it, 0 otherwise
+int fdtable_a_checkforinode     (int pid, int inodenum, struct FdtableArray *fdtablea);   
 
 int _fdtable_a_print            (struct FdtableArray *fdtablea);
 
