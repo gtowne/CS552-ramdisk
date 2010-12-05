@@ -26,7 +26,7 @@ int superblock_initialize(struct Superblock *superblock)
     superblock->free_blocks = TOTAL_BLOCKS;
     superblock->free_inodes = INODES;
     #ifdef USE_PTHREADS
-    pthread_mutex_init(&superblock->mutex, NULL);;  
+    pthread_mutex_init(&superblock->mutex, NULL);
     #else
     sema_init(&superblock->mutex, 1);
     #endif
