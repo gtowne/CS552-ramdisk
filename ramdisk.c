@@ -30,7 +30,8 @@ int _ramdisk_walk_path(struct Ramdisk* ramdisk, char* name);
 int _ramdisk_get_parent(struct Ramdisk* ramdisk, char* name, char token[14]);
 
 int _ramdisk_find_directory_entry(struct Ramdisk* ramdisk, 
-				  struct IndexNode* parent, char* name);
+				  struct IndexNode* parent, char* name,
+				  struct Block** oBlock, int* offset);
 int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* parent,
 				 char* name, enum NodeType type);
 
@@ -162,20 +163,35 @@ int rd_read(int fd, char* address, int num_bytes)
 	return -1;
     }
 
-    if(pos_in_file+num_bytes > node->size)
-    {
-      printf("ERROR:: Ramdisk:: read. attempt to read past the end of the file\n");
-      return 0;
-    }
+    //eh. This is okay -- there is no way for the calling function to
+    //know how many bytes are in the file. Just do our best and return 0;
+    //if(pos_in_file+num_bytes > node->size)
+    //{
+    //  printf("ERROR:: Ramdisk:: read. attempt to read past the end of the file\n");
+    //  return 0;
+    //}
     
     //TODO: Memory twiddling
     int bytesToRead=num_bytes;
+    if(pos_in_file + bytesToRead > node->size)
+    {
+      bytesToRead = node->size - pos_in_file;
+    }
+
     int block_offset;
     int bytesRead;
     int totalBytes=0;
     struct Block* block;
     while(bytesToRead > 0)
     {
+      //printf("Ramdisk:: read: %d %d %d %d\n", node->size, pos_in_file, totalBytes, bytesToRead);
+      if(pos_in_file >= node->size)
+      {
+	//EOF
+	//return 0;
+	break;
+      }
+
       block = inode_get_block_for_byte_index(node, pos_in_file, &block_offset);
       if(block == NULL)
       {
@@ -184,6 +200,7 @@ int rd_read(int fd, char* address, int num_bytes)
       }
       bytesRead = block_copy_out(block, &(address[totalBytes]),
 				 block_offset, bytesToRead);
+
       if(bytesRead < 0)
       {
 	printf("ERROR: Ramdisk:: read. error reading from block\n");
@@ -196,6 +213,7 @@ int rd_read(int fd, char* address, int num_bytes)
 	bytesToRead -= bytesRead;
       }
     }
+    //printf("Ramdisk:: read: %d %d %d %d\n", node->size, pos_in_file, totalBytes, bytesToRead);
 
     // Update the file's offset
     int retval = fdtable_a_seekwithfd(pid, fd, pos_in_file, &fdtablea);
@@ -205,9 +223,9 @@ int rd_read(int fd, char* address, int num_bytes)
 	return -1;
     }
 
-    printf("RD_READ Read %d bytes from file descriptor %d\n", totalBytes, fd);
+    printf("RD_READ Read %d bytes from file descriptor %d %d %d\n", totalBytes, fd, pos_in_file, node->size);
 
-    if(pos_in_file == node->size)
+    if(pos_in_file >= node->size)
     {
       return 0; //EOF
     }
@@ -314,6 +332,8 @@ int rd_unlink(char *pathname)
     extern struct Ramdisk ramdisk;
     int retval;
 
+    //@TODO: Check if file is open somewhere
+
 /*
   //I'm a little confused about exactly what this is doing
   //should we just disallow removal of open files? (That's what
@@ -335,8 +355,13 @@ int rd_unlink(char *pathname)
       printf("ERROR: Ramdisk:: unlink. Invalid path %s\n", pathname);
       return -1;
     }
+    struct IndexNode* parentInode = &(ramdisk.inodes[parent]);
 
-    int item = _ramdisk_find_directory_entry(&ramdisk, &(ramdisk.inodes[parent]), name);
+    struct Block* entryBlock;
+    int entryOffset;
+
+    int item = _ramdisk_find_directory_entry(&ramdisk, &(ramdisk.inodes[parent]), name,
+					     &entryBlock, &entryOffset);
     if(item < 0)
     {
       printf("ERROR: Ramdisk:: unlink. Invalid path %s\n", pathname);
@@ -356,8 +381,32 @@ int rd_unlink(char *pathname)
     _ramdisk_deallocate_inode(&ramdisk, item);
 
     //remove the entry from the parent
-    retval = _ramdisk_remove_directory_entry(&ramdisk, &(ramdisk.inodes[parent]), name);
-    if(retval != 1)
+    //we know where this item's entry is, from the call to find the
+    //inode. swap it with the last item in the directory, and
+    //decrement the parent's size.
+    //
+    //entryBlock and entryOffset are the block and offset for the
+    //doomed entry 
+    //
+
+    //get the Block* and offset for the last entry
+    struct Block* lastBlock;
+    int lastOffset;
+    lastBlock = inode_get_block_for_byte_index(parentInode, 
+					       parentInode->size - DIRECTORY_ENTRY_SIZE,
+					       &lastOffset);
+    
+    //copy the last entry over the doomed entry
+    block_copy_in(entryBlock, &(lastBlock->memory[lastOffset]), 
+		  entryOffset*DIRECTORY_ENTRY_SIZE, 
+		  DIRECTORY_ENTRY_SIZE);
+    
+    //null out the former last entry
+    _null_out_directory_entry((struct DirectoryEntry*)(&lastBlock->memory[lastOffset]));
+
+    inode_reduce_size(parentInode, &ramdisk, DIRECTORY_ENTRY_SIZE);
+
+    if(retval < 0)
     {
       printf("ERROR: Ramdisk:: unlink. error removing directory entry\n", pathname);
       return -1;
@@ -435,7 +484,7 @@ int _ramdisk_initialize(struct Ramdisk* ramdisk)
   int i=0; 
   for(i=0; i<INODES; i++)
   {
-    inode_init(&(ramdisk->inodes[i]));
+    r_inode_init(&(ramdisk->inodes[i]));
   }
   
   int ret;
@@ -455,15 +504,11 @@ int _ramdisk_initialize(struct Ramdisk* ramdisk)
     }
   }
 
-  //@TODO: Initialize Blocks? Lazy evaluation?  
-
-
   //now, configure the "/" directory.
   ramdisk->inodes[0].type = RAMDISK_DIR;
   //initially all pointers all null, so everything should be set now.
 
-  //we know we'll have to put something here eventually, so allocate a block now.
-  //inode_add_block(&(ramdisk->inodes[0]), ramdisk);
+  superblock_initialize(&(ramdisk->superblock));
 
   fdtable_a_initialize(&fdtablea);
 
@@ -488,8 +533,17 @@ struct Block* _ramdisk_allocate_block(struct Ramdisk* ramdisk)
   printf("Ramdisk::allocate_block: allocated block # %d\n", ret);
 
   int index = ret-OVERHEAD_BLOCKS;
-  _null_out_block(&(ramdisk->blocks[index]));
-  return &(ramdisk->blocks[index]);  
+  struct Block* block = &(ramdisk->blocks[index]);
+  _null_out_block(block);
+
+  struct Block *begin, *end;
+
+  begin=&(ramdisk->blocks[0]);
+  end  =&(ramdisk->blocks[FS_BLOCKS-1]);
+
+  int blah = block-begin;
+
+  return block;  
 }
 
 int _ramdisk_deallocate_block(struct Ramdisk* ramdisk, struct Block* block)
@@ -504,14 +558,24 @@ int _ramdisk_deallocate_block(struct Ramdisk* ramdisk, struct Block* block)
     return -1;
   }
 
-  int index = (block-begin)/sizeof(struct Block*);
+  int index = (block-begin); //compiler automatically divides by the
+			     //size of struct Block
     
-  int ret = bitmap_removeatindex(index, &(ramdisk->bitmap));
+  int ret = bitmap_removeatindex(index+OVERHEAD_BLOCKS, &(ramdisk->bitmap));
+  if(_bitmap_isset_b(index+OVERHEAD_BLOCKS, &(ramdisk->bitmap)) == 1)
+  {
+    printf("Error: Why is this bit still set?\n");
+  }
+
+
   if(ret != 0)
   {
     printf("Ramdisk:: deallocate_block: error resetting bitmap index %d\n", index);
     return -1;
   }
+
+  printf("Ramdisk::deallocate_block: deallocated block # %d\n", index+OVERHEAD_BLOCKS);
+  return 1;
 }
 
 int _ramdisk_allocate_inode(struct Ramdisk* ramdisk, enum NodeType type)
@@ -551,7 +615,7 @@ int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index)
   return -1;
   
   ramdisk->inodes[index].type = RAMDISK_UNALLOCATED;
-  inode_init(&(ramdisk->inodes[index]));
+  r_inode_init(&(ramdisk->inodes[index]));
   return 0;
 }
 
@@ -586,7 +650,7 @@ int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* pare
    }
 
    //check if the thing already exists
-   int test = _ramdisk_find_directory_entry(ramdisk, parent, name);
+   int test = _ramdisk_find_directory_entry(ramdisk, parent, name, NULL, NULL);
    if(test != -1)
    {
      printf("ERROR: Ramdisk:: add_directory_entry. Entry already exists\n");
@@ -601,13 +665,14 @@ int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* pare
      return -1;
    }
 
-   //@TODO: what if entries get removed?
-   //maybe we should scan all the blocks first to see if we can add it
-   //somewhere else, other than the end?
    struct Block* block;
    int offset=0;
    int dummy;
    int retval=-1;
+/*
+   //@TODO: what if entries get removed?
+   //maybe we should scan all the blocks first to see if we can add it
+   //somewhere else, other than the end?
    while(offset < parent->size)
    {
      block = inode_get_block_for_byte_index(parent, offset, &dummy);
@@ -634,10 +699,11 @@ int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* pare
 
      parent->size += DIRECTORY_ENTRY_SIZE;
     }
+*/
 
-/*
+
    //get the last memory block of the directory (or allocate a new one)
-   struct Block* block = inode_get_last_block(parent, &dummyoffset);
+   block = inode_get_last_block(parent, &dummy);
    if(block == NULL)
    {
      block = inode_add_block(parent, ramdisk);
@@ -650,7 +716,7 @@ int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* pare
    }
 
    //insert the directory entry
-   int retval = add_directory_entry(block, name, (unsigned short)(childIdx))
+   retval = add_directory_entry(block, name, (unsigned short)(childIdx));
 
    //shouldn't ever enter this block -- the block above should take care of it
    //if it was full, allocate another block and try again
@@ -670,7 +736,6 @@ int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* pare
  
    //increment the size of the block
    parent->size += DIRECTORY_ENTRY_SIZE;
-*/
 
    printf("Ramdisk:: add_directory_entry. Added entry \"%s\" (%x) to parent %x\n", name, &(ramdisk->inodes[childIdx]), parent);
 
@@ -679,7 +744,8 @@ int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* pare
 
 
 int _ramdisk_find_directory_entry(struct Ramdisk* ramdisk, 
-				  struct IndexNode* parent, char* name)
+				  struct IndexNode* parent, char* name,
+				  struct Block** oBlock, int* oOffset)
 {
   int offset=0;
   struct Block* block;
@@ -696,8 +762,16 @@ int _ramdisk_find_directory_entry(struct Ramdisk* ramdisk,
   {
     block = inode_get_block_for_byte_index(parent, offset, &dummy);
     retval = get_directory_inode_index(block, name, &index);
-    if(retval == 1)
+    if(retval >=0)
     {
+      if(oBlock != NULL)
+      {
+	*oBlock = block;
+      }
+      if(oOffset != NULL)
+      {
+	*oOffset = retval;
+      }
       return index;
     }
     offset+=BLOCK_BYTES;
@@ -832,7 +906,7 @@ int _ramdisk_walk_path(struct Ramdisk* ramdisk, char* name)
     token[tokenLength-1]='\0';
     //printf("/%s",token);
 
-    nodeIdx = _ramdisk_find_directory_entry(ramdisk, node, token);
+    nodeIdx = _ramdisk_find_directory_entry(ramdisk, node, token, NULL, NULL);
     if(nodeIdx < 0)
     {
       //path not found

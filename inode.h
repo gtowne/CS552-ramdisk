@@ -48,7 +48,7 @@ struct IndexNode
   char freeBytes[16]; //padding to make the struct the right size
 };
 
-void inode_init(struct IndexNode* iNode);
+void r_inode_init(struct IndexNode* iNode);
 
 
 /**
@@ -74,6 +74,24 @@ struct Block* inode_get_last_block(struct IndexNode* iNode, int* oBlockOffset);
                                for an indirect node, etc.)
 */
 struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk);
+
+/**
+   increase the iNode's size by "increase" bytes
+ */
+struct Block* inode_increase_size(struct IndexNode* iNode, 
+				  struct Ramdisk* iRamDisk, 
+				  int increase);
+
+/**
+   reduce the iNode's size by "reduce" bytes. (deallocate blocks if necessary)
+ */
+int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk, 
+		      int reduce);
+
+/**
+   remove the LAST block
+ */
+int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk);
 
 /**
 @param[in]  IndexNode iNode    the index node for the file
