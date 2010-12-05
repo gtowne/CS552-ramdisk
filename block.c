@@ -64,7 +64,7 @@ int get_directory_inode_index(struct Block *block, char* name, unsigned short in
 		if (1 == str_equals((entries[i].name), name, DIR_ENTRY_NAME_BYTES)) {
 			*index = entries[i].inode_index;
 			
-			return 1;
+			return i;
 		}
 	}
 	

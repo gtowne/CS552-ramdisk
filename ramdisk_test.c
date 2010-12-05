@@ -23,16 +23,22 @@ int main()
     //test readdir
     ls("/");
 
-/*
-    //try unlinking
-    for(i=0; i<26; i++)
+    name[1]='a';
+    for(i=0; i<10; i++)
     {
-      int q = rd_unlink(name);
-      printf("%d %d %s\n", i, q, name); 
-      name[1]--;
+      rd_unlink(name);
+      name[1]++;
     }
-*/
+    printf("unlinked 10 files\n");
+    ls("/");
 
+    for(; i<26; i++)
+    {
+      rd_unlink(name);
+      name[1]++;
+    }
+
+    ls("/");
 
     //return 0;
 
@@ -99,12 +105,21 @@ int main()
 
     //reset to the beginning
     rd_seek(fd, 0);
+
+    //read out as one big chunk
     char raptor[1953];
     rd_read(fd, raptor, len*4);
     raptor[len*4]='\0';
     printf("%s", raptor);
 
-//@TODO: test reading until end of file
+    //close the file
+    rd_close(fd);
+
+    more("/home/christmas/friends.txt");
+
+
+
+
 //@TODO: test interleaving
 
 
@@ -128,5 +143,25 @@ int ls(char* path)
     printf("%s/%s\n", path, buffer);
   }
   fd = rd_close(fd);
+  return 0;
+}
+
+int more(char* path)
+{
+  char buffer[198];
+  buffer[197]='\0';
+  int fd = rd_open(path);
+  if(fd < 0)
+  {
+    return -1;
+  }
+
+  while(rd_read(fd, buffer, 197) > 0)
+  {
+    printf("%s", buffer);
+  }
+  printf("%s", buffer);
+  
+  printf("\n");
   return 0;
 }

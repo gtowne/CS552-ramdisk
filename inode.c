@@ -23,7 +23,7 @@ const int DirectlyIndexedBytes=BLOCK_BYTES*IndexNodeDirectPointers;
 const int IndirectlyIndexedBytes=BLOCK_BYTES*(BLOCK_PTRS_PER_STORAGE_BLOCK);
 const int DoubleIndexedBytes=BLOCK_BYTES*(BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK);
 
-void inode_init(struct IndexNode* iNode)
+void r_inode_init(struct IndexNode* iNode)
 {
   int i;
   iNode->type = RAMDISK_UNALLOCATED;
@@ -232,6 +232,67 @@ void _pointerblock_clear_block(Block* iBlock, Ramdisk* iRamDisk)
   }
 }
 */
+
+ /*
+struct Block* inode_increase_size(struct IndexNode* iNode, 
+				  struct Ramdsik* iRamDisk, 
+				  int increase)
+{
+  int offset;
+  struct Block* block = inode_get_last_block(iNode, &offset);
+  if(increase < BLOCK_BYTES-offset-1)
+  {
+    
+  }
+}
+ */
+
+int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk, 
+		      int reduce)
+{
+  if(iNode == NULL || iRamDisk == NULL || reduce < 0)
+  {
+    return -1;
+  }
+  if(reduce == 0)
+  {
+    return 0;
+  }
+
+  //find the current last block
+  int dummy;
+  struct Block* currentLastBlock = inode_get_last_block(iNode, &dummy);
+  struct Block* hypothetical = 
+    inode_get_block_for_byte_index(iNode, iNode->size-reduce-1, &dummy);
+
+  if(currentLastBlock != hypothetical)
+  {
+    //remove the last block.
+    inode_remove_block(iNode, iRamDisk);
+  }
+
+  iNode->size -= reduce;
+
+  return 1;
+}
+
+int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
+{
+  int blockIdx = iNode->size / BLOCK_BYTES;
+  if(blockIdx < IndexNodeDirectPointers)
+  {
+    if(iNode->directPointer[blockIdx] != NULL)
+    {
+      _ramdisk_deallocate_block(iRamDisk, iNode->directPointer[blockIdx]);
+      iNode->directPointer[blockIdx]=NULL;
+      return 1;
+    }
+  }
+
+//@TODO: Indirect pointers
+  return -1;
+}
+
 
 /**
 @param[in]  IndexNode iNode    the index node for the file

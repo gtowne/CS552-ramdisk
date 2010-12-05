@@ -30,8 +30,8 @@ This implements the bitmap part of the assignment
 
 struct Ramdisk //Ramdisk struct
 {
-    //struct SuperBlock;       superblock;
-    struct Block      superblock;
+    struct Superblock;       superblock;
+    //struct Block      superblock;
     struct IndexNode  inodes[INODES];
     struct Bitmap     bitmap;
     struct Block      blocks[FS_BLOCKS];

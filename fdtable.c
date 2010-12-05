@@ -162,6 +162,21 @@ int fdtable_positionforfd(int fd, struct Fdtable *fdtable)
     return -1;
 }
 
+int fdtable_checkforinode(int inodenum, struct Fdtable *fdtable)
+{
+    int ii;
+     
+    for (ii = 0; ii < fdtable->t_size; ii++)
+    {
+        if (fdtable->table[ii].inode_num == inodenum)
+        {
+            return 1;
+        }
+    }
+    
+    return 0;
+}
+
 int _fdtable_print(struct Fdtable *fdtable)
 {
     int ii;
@@ -321,6 +336,25 @@ int fdtable_a_positionforfd(int pid, int fd, struct FdtableArray *fdtablea)
     }
         
     return -1;
+}
+
+int fdtable_a_checkforinode(int pid, int inodenum, struct FdtableArray *fdtablea)
+{
+    int ii;
+
+    for (ii = 0; ii < fdtablea->a_size; ii++)
+    {
+        if (fdtablea->array[ii].pid != pid)
+        {
+            if (fdtable_checkforinode(inodenum, (Fdtable*)&(fdtablea->array[ii])) == 1)
+            {
+                return 1;
+            }
+            
+        }
+    }
+        
+    return 0;
 }
 
 int _fdtable_a_print(struct FdtableArray *fdtablea)

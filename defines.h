@@ -29,6 +29,8 @@
 #define TABLE_SIZE 20
 #define NUM_TABLES 20
 
+#define USE_PTHREADS
+
 #endif
 
 
