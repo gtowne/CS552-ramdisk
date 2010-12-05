@@ -22,6 +22,7 @@ This implements the ramdisk part of the assignment
 #include "ramdisk.h"
 
 extern struct FdtableArray fdtablea;
+extern struct Ramdisk ramdisk;
 
 int _ramdisk_allocate_inode(struct Ramdisk* ramdisk, enum NodeType type);
 int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index);
@@ -47,9 +48,9 @@ int block_fill(struct Block* block)
 
 
 int rd_creat(char *iPathname)
-{
-    extern struct Ramdisk ramdisk;
-
+{    
+    superblock_lock(&(ramdisk.superblock));
+    
     char token[14]; //the last part of the path, the thing we want to create
     int parent = _ramdisk_get_parent(&ramdisk, iPathname, token);
     if(parent < 0)
@@ -67,12 +68,14 @@ int rd_creat(char *iPathname)
      return 0;
     }
     return -1;
+
+    superblock_unlock(&(ramdisk.superblock));
 }
 
 int rd_mkdir(char *iPathname)
-{
-    extern struct Ramdisk ramdisk;
-
+{    
+    superblock_lock(&(ramdisk.superblock));
+    
     char token[14]; //the last part of the path, the thing we want to create
     int parent = _ramdisk_get_parent(&ramdisk, iPathname, token);
     if(parent < 0)
@@ -91,12 +94,14 @@ int rd_mkdir(char *iPathname)
       return 0;
     }
     return -1;
+
+    superblock_unlock(&(ramdisk.superblock));
 }
 
 int rd_open(char *pathname)
 {
-    extern struct Ramdisk ramdisk;
-
+    superblock_lock(&(ramdisk.superblock));
+    
     int idx = _ramdisk_walk_path(&ramdisk, pathname);
     if(idx < 0)
     {
@@ -116,12 +121,14 @@ int rd_open(char *pathname)
     printf("RD_OPEN Opened: %s, inode:%d, fd:%d\n", pathname, idx, fd);
     #endif
     
-    return fd;   
+    return fd; 
+
+    superblock_unlock(&(ramdisk.superblock));  
 }
 
 int rd_close(int fd)
 {
-    extern struct Ramdisk ramdisk;
+    superblock_lock(&(ramdisk.superblock));
 
     int pid = getpid();
     
@@ -134,11 +141,13 @@ int rd_close(int fd)
     printf("RD_CLOSE closed file descriptor %d\n", fd);
     
     return 0;
+
+    superblock_unlock(&(ramdisk.superblock));
 }
 
 int rd_read(int fd, char* address, int num_bytes)
 {
-    extern struct Ramdisk ramdisk;
+    superblock_lock(&(ramdisk.superblock));
 
     int pid = getpid();
     // Get the inode numer for this file descriptor
@@ -231,11 +240,13 @@ int rd_read(int fd, char* address, int num_bytes)
     }
     
     return 1;
+
+    superblock_unlock(&(ramdisk.superblock));
 }
 
 int rd_write(int fd, char* address, int num_bytes)
 {
-   extern struct Ramdisk ramdisk;
+    superblock_lock(&(ramdisk.superblock));
 
     int pid = getpid();
     // Get the inode numer for this file descriptor
@@ -312,10 +323,14 @@ int rd_write(int fd, char* address, int num_bytes)
     printf("RD_WRITE Wrote %d bytes to file descriptor %d\n", totalBytes, fd);
     
     return 0;
+
+    superblock_unlock(&(ramdisk.superblock));
 }
 
 int rd_seek(int fd, int offset)
 {
+    superblock_lock(&(ramdisk.superblock));
+
     int pid = getpid();
     int retval = fdtable_a_seekwithfd(pid, fd, offset, &fdtablea);
     if (retval < 0)
@@ -325,11 +340,14 @@ int rd_seek(int fd, int offset)
     printf("RD_SEEK Seeked to position %d in file descriptor %d\n", offset, fd);
 
     return 0;
+
+    superblock_unlock(&(ramdisk.superblock));
 }
 
 int rd_unlink(char *pathname)
 {
-    extern struct Ramdisk ramdisk;
+    superblock_lock(&(ramdisk.superblock));
+    
     int retval;
 
     //@TODO: Check if file is open somewhere
@@ -413,11 +431,13 @@ int rd_unlink(char *pathname)
     }
 
     return 0;
+    
+    superblock_unlock(&(ramdisk.superblock));
 }
 
 int rd_readdir(int fd, char *address)
 {
-    extern struct Ramdisk ramdisk;
+    superblock_lock(&(ramdisk.superblock));
 
     int pid = getpid();
     // Get the inode numer for this file descriptor
@@ -471,6 +491,8 @@ int rd_readdir(int fd, char *address)
     }
     
     return 1;
+    
+    superblock_unlock(&(ramdisk.superblock));
 }
 
 
