@@ -61,6 +61,7 @@ int superblock_lock(struct Superblock *superblock)
     return pthread_mutex_lock(&superblock->mutex);
     #else
     down_interruptible(&superblock->mutex);
+    return 0;
     #endif
     return -1;
 }
@@ -71,6 +72,7 @@ int superblock_unlock(struct Superblock *superblock)
     return pthread_mutex_unlock(&superblock->mutex);
     #else
     up(&superblock->mutex);
+    return 0;
     #endif
     return -1;
 }
