@@ -21,10 +21,21 @@ This implements the superblock part of the assignment
 
 #include "defines.h"
 
+#ifdef USE_PTHREADS
+#include <pthread.h>
+#endif
+
 typedef struct Superblock //Bitmap struct
 {
-  short free_blocks;
-  short free_inodes;  
+    short free_blocks;
+    short free_inodes;
+    #ifdef USE_PTHREADS
+    pthread_mutex_t mutex;  
+    unsigned char filler[BLOCK_BYTES - 2*sizeof(short) - sizeof(pthread_mutex_t)];
+    #else
+    struct semaphore mutex;
+    unsigned char filler[BLOCK_BYTES - 2*sizeof(short) - sizeof(struct semaphore)];
+    #endif
 }Superblock;
 
 int superblock_initialize    (struct Superblock *superblock);            // Initializes superblock with the right values
@@ -32,6 +43,9 @@ int superblock_getfreeblocks (struct Superblock *superblock);            // Gets
 int superblock_getfreeinodes (struct Superblock *superblock);            // Gets the number of free inodes in the ramdisk
 int superblock_setfreeblocks (short num, struct Superblock *superblock); // Sets the number of free blocks in the ramdisk
 int superblock_setfreeinodes (short num, struct Superblock *superblock); // Sets the number of free inodes in the ramdisk
+
+int superblock_lock          (struct Superblock *superblock);            // Locks the ramdisk
+int superblock_unlock        (struct Superblock *superblock);            // Unlocks the ramdisk
 
 int _superblock_print        (struct Superblock *superblock);            // Prints the superblock
 

@@ -19,6 +19,11 @@ int main()
     _superblock_print(&superblock);
 
     printf("blocks: %d, inodes: %d\n", superblock_getfreeblocks(&superblock), superblock_getfreeinodes(&superblock));
+
+    superblock_lock(&superblock);
+    printf("locked\n");
+    superblock_unlock(&superblock);
+    printf("unlocked\n");
     
     return 0;
 }
