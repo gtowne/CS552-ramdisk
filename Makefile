@@ -1,8 +1,13 @@
+obj-m += ramdisk_kernel_lib.o
 
 GCC = gcc
 CXXFLAGS = -g -DDEBUG
+KDIR = /usr/src/kernels/kernel-2.6.18/linux-2.6.18.i686/
+PWD = $(shell pwd)
 
 all: BitmapTest FdtableTest RamdiskTest SuperblockTest
+	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules	
+
 
 RamdiskTest: ramdisk_test.c ramdisk.o bitmap.o block.o inode.o fdtable.o string_utils.o superblock.o
 	$(GCC) -o RamdiskTest $(CXXFLAGS) ramdisk_test.c ramdisk.o bitmap.o block.o inode.o fdtable.o string_utils.o superblock.o
@@ -42,6 +47,10 @@ block.o: block.h block.c string_utils.h
 
 string_utils.o: string_utils.h string_utils.c
 	$(GCC) -c $(CXXFLAGS) string_utils.c
+	
+ramdisk_lib.o: ramdisk_lib.h ramdisk_lib.c
+	$GCC -c $(CXXFLAGS) ramdisk_lib.c
+
 
 clean:
 	rm *.o BitmapTest RamdiskTest FdtableTest InodeTest SuperblockTest

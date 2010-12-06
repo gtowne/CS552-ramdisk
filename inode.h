@@ -75,12 +75,6 @@ struct Block* inode_get_last_block(struct IndexNode* iNode, int* oBlockOffset);
 */
 struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk);
 
-/**
-   increase the iNode's size by "increase" bytes
- */
-struct Block* inode_increase_size(struct IndexNode* iNode, 
-				  struct Ramdisk* iRamDisk, 
-				  int increase);
 
 /**
    reduce the iNode's size by "reduce" bytes. (deallocate blocks if necessary)

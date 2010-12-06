@@ -120,9 +120,33 @@ int add_block_to_indirect_storage(struct Block *storage_block, struct Block* new
 
 struct Block* block_at(struct Block *storage_block, int index) {
 	struct IndirectStorageBlock *this_storage_block = (struct IndirectStorageBlock *) storage_block;
-	
+	if(storage_block == NULL)
+	{
+	  return NULL;
+	}
+	if(index < 0 || index > DIRECTORY_ENTRIES_PER_BLOCK)
+	{
+	  return NULL;
+	}
 	return this_storage_block->children[index];
 }
+
+int set_indirect_storage_block(struct Block *storage_block, int index, 
+			       struct Block* new_block)
+{
+	struct IndirectStorageBlock *this_storage_block = (struct IndirectStorageBlock *) storage_block;
+	if(storage_block == NULL)
+	{
+	  return -1;
+	}
+	if(index < 0 || index > DIRECTORY_ENTRIES_PER_BLOCK)
+	{
+	  return -1;
+	}
+	
+	this_storage_block->children[index] = new_block;
+}
+
 
 int block_copy_out(struct Block* block, char* dst, int offset, int numBytes)
 {
