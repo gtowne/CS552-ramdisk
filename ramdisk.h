@@ -19,7 +19,7 @@ This implements the bitmap part of the assignment
 #ifndef RAMDISK_H_
 #define RAMDISK_H_
 
-//#include "superblock.h"
+#include "superblock.h"
 #include "inode.h"
 #include "bitmap.h"
 #include "block.h"
@@ -30,7 +30,7 @@ This implements the bitmap part of the assignment
 
 struct Ramdisk //Ramdisk struct
 {
-    struct Superblock;       superblock;
+    struct Superblock       superblock;
     //struct Block      superblock;
     struct IndexNode  inodes[INODES];
     struct Bitmap     bitmap;

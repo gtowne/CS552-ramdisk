@@ -15,6 +15,7 @@ INODE:
 This implements the iNode part of the assignment
 
 */
+#include <stdio.h>
 
 #include "inode.h"
 #include "ramdisk.h"
@@ -61,8 +62,20 @@ struct Block* inode_get_block_for_byte_index(struct IndexNode* iNode,
     return iNode->directPointer[blockIdx];
   }
 
-  //@TODO: Indirect pointers
+  //now, onto the single indirect pointers
+  blockIdx -= IndexNodeDirectPointers;
+  
+  if(blockIdx < DIRECTORY_ENTRIES_PER_BLOCK * IndexNodeIndirectPointers)
+  {
+    int indirectIdx = blockIdx / DIRECTORY_ENTRIES_PER_BLOCK;
+    blockIdx = blockIdx % DIRECTORY_ENTRIES_PER_BLOCK;
+    //does the null check inside the function
+    struct Block* block = block_at(iNode->indirectPointer[indirectIdx], 
+				   blockIdx);
+    return block;
+  }
 
+  //@TODO: double Indirect pointers
 
   return NULL;
 }
@@ -72,40 +85,6 @@ struct Block* inode_get_last_block(struct IndexNode* iNode, int* oBlockOffset)
   return inode_get_block_for_byte_index(iNode, iNode->size, oBlockOffset);
 }
 
-
-/**
-Helper function for inode_add_block_to_file
-
-@param[in]  Block* iTable  the block containing all the pointers
-@param[in]  Block* iBlock  the block pointer to insert
-@return     int    the first free slot where the block pointer was inserted
-                     -1 if the table pointer is NULL, 
-                     BLOCK_PTRS_PER_STORAGE_BLOCK if the table is full.
- */
-/*
-int _pointerblock_insert_pointer(Block* iTable, Block* iBlock)
-{
-  int i;
-
-  if(iTable == NULL)
-  {
-    return -1;
-  }
-
-  //interpret the block as a table of pointers
-  Block** table = (Block**)(iTable);
-
-  for(i=0; i<BLOCK_PTRS_PER_STORAGE_BLOCK; i++)
-  {
-    if(table[i] == NULL)
-    {
-      table[i] = iBlock;
-      return i;
-    }
-  }
-  return i; //will be  BLOCK_PTRS_PER_STORAGE_BLOCK
-}
-*/
 
 /**
 @param[in]  IndexNode iNode    the index node for the file
@@ -118,12 +97,6 @@ int _pointerblock_insert_pointer(Block* iTable, Block* iBlock)
 
 struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
 {
-  int slot; //for doing the indirect pointers
-  struct Block* pointerblock;
-  struct Block** table;
-
-  //printf("Inode:: add_block\n");
-
   struct Block* block = _ramdisk_allocate_block(iRamDisk);
   if(block == NULL)
   {
@@ -143,35 +116,31 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
     }    
   }
 
-  return NULL;
-/*
-  //d'oh. no space in the direct pointer table, go to indirect pointers
+  //now, on to the single indirect pointers
+  printf("Indirect pointers\n");
+  //first, check to see if we need to add a table
   for(i=0; i<IndexNodeIndirectPointers; i++)
   {
-    slot = _pointerblock_insert_pointer(iNode->indirectPointer[i], block);
-
-    //check if the block is full
-    if(slot == BLOCK_PTRS_PER_STORAGE_BLOCK)
+    if(iNode->indirectPointer[i] == NULL)
     {
-      continue;
-    }
-
-    //if the pointer is null, allocate a block for the pointers
-    //after allocation, inserting pointer into the table
-    if(slot == -1)
-    {
-      pointerblock = ram_disk_allocate_block(iRamDisk);
-      if(pointerblock == NULL)
+      iNode->indirectPointer[i] = block;
+      block = _ramdisk_allocate_block(iRamDisk);
+      if(block == NULL)
       {
-	//UNABLE TO ALLOCATE A NEW BLOCK
-	return -1;
-      }
-      iNode->indirectPointer[i] = pointerblock;
-      _pointerblock_insert_pointer(iNode->indirectPointer[i], block);
+	return NULL;
+      }  
     }
-    return 1;
+  
+    int retval = add_block_to_indirect_storage(iNode->indirectPointer[i], block);
+    if(retval >= 0)
+    {
+      return block;
+    }
   }
 
+  return NULL;
+
+/*
   //double d'oh. no space in the indirect pointer table, go to double pointers
 
   //first, you need to get the block of indirect pointers.
@@ -208,44 +177,6 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   */
 }
 
-/**
-Helper function for inode_release
-
-@param[in]  Block*  the block containing all the pointers
-@return     int     the first free slot. (-1 if full)
- */
-/*
-void _pointerblock_clear_block(Block* iBlock, Ramdisk* iRamDisk)
-{
-  int i;
-
-  //interpret the block as a table of pointers
-  Block** table = (Block**)(iBlock);
-
-  for(i=0; i<BLOCK_PTRS_PER_STORAGE_BLOCK; i++)
-  {
-    if(table[i] != NULL)
-    {
-      ramdisk_deallocate_block(&(table[i]));
-      table[i] = NULL;
-    }
-  }
-}
-*/
-
- /*
-struct Block* inode_increase_size(struct IndexNode* iNode, 
-				  struct Ramdsik* iRamDisk, 
-				  int increase)
-{
-  int offset;
-  struct Block* block = inode_get_last_block(iNode, &offset);
-  if(increase < BLOCK_BYTES-offset-1)
-  {
-    
-  }
-}
- */
 
 int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk, 
 		      int reduce)
@@ -289,7 +220,30 @@ int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
     }
   }
 
-//@TODO: Indirect pointers
+  //now, on to single indirect pointers
+  if(blockIdx < DIRECTORY_ENTRIES_PER_BLOCK * IndexNodeIndirectPointers)
+  { 
+    int indirectIdx = blockIdx / DIRECTORY_ENTRIES_PER_BLOCK;
+    blockIdx = blockIdx % DIRECTORY_ENTRIES_PER_BLOCK;
+    //does the null check inside the function
+    struct Block* doomed = block_at(iNode->indirectPointer[indirectIdx], 
+				    blockIdx);
+    if(doomed != NULL)
+    {
+      _ramdisk_deallocate_block(iRamDisk, doomed);
+      set_indirect_storage_block(iNode->indirectPointer[indirectIdx],
+				 blockIdx, NULL);
+    }
+    if(blockIdx = 0) //this was the first block in the table
+    {
+      _ramdisk_deallocate_block(iRamDisk, iNode->indirectPointer[indirectIdx]);
+      iNode->indirectPointer[indirectIdx]=NULL;
+    }
+  }
+  
+  
+  
+  //@TODO: Double Indirect pointers
   return -1;
 }
 
@@ -315,7 +269,33 @@ int inode_release(struct IndexNode* iNode,
     {
       _ramdisk_deallocate_block(iRamDisk, iNode->directPointer[i]);
     }
+    else
+    {
+      return 1;
+    }
   }
+
+  for(i=0; i<IndexNodeIndirectPointers; i++)
+  {
+    if(iNode->indirectPointer[i] == NULL)
+    {
+      return 1;
+    }
+    int j;
+    for(j=0; j<DIRECTORY_ENTRIES_PER_BLOCK; j++)
+    {
+      struct Block* block = block_at(iNode->indirectPointer[i], j);
+      if(block != NULL)
+      {
+	_ramdisk_deallocate_block(iRamDisk, block);
+	set_indirect_storage_block(iNode->indirectPointer[i], j, NULL);
+      }
+    }
+    _ramdisk_deallocate_block(iRamDisk, iNode->indirectPointer[i]);
+  }
+
+
+
   return 1;
 }
 

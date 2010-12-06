@@ -8,17 +8,18 @@ struct FdtableArray fdtablea;
 
 int main()
 {
-    char name[16] = "/aaaa";
+    char name[14] = "/aaaa";
 
     _ramdisk_initialize(&ramdisk);
 
     //create a directory that requires more than one block
     int i;
-    for(i=0; i<26; i++)
+    for(i=0; i<150; i++)
     {
+      sprintf(name, "/a%d", i);
       int q = rd_creat(name);
       printf("%d %d %s\n", i, q, name); 
-      name[1]++;
+      //name[1]++;
     }
     //test readdir
     ls("/");
@@ -26,16 +27,17 @@ int main()
     name[1]='a';
     for(i=0; i<10; i++)
     {
+      sprintf(name, "/a%d", i);
       rd_unlink(name);
-      name[1]++;
+      //name[1]++;
     }
     printf("unlinked 10 files\n");
     ls("/");
 
-    for(; i<26; i++)
+    for(; i<150; i++)
     {
+      sprintf(name, "/a%d", i);
       rd_unlink(name);
-      name[1]++;
     }
 
     ls("/");
@@ -84,6 +86,10 @@ int main()
     }
     fd = rd_close(fd);
 
+    rd_unlink("/home/christmas/cookies.txt");
+
+    //return 0;
+
     //writing/reading one big chunk
     fd = rd_open("/home/christmas/friends.txt");
     char * logo=
@@ -98,7 +104,7 @@ int main()
     int len = strlen(logo);
     printf("%d\n%s", len, logo);
     //write some longer, multi-block chunks
-    for(i=0; i<4; i++)
+    for(i=0; i<10; i++)
     {
       rd_write(fd, logo, len);
     }
@@ -107,17 +113,18 @@ int main()
     rd_seek(fd, 0);
 
     //read out as one big chunk
-    char raptor[1953];
-    rd_read(fd, raptor, len*4);
-    raptor[len*4]='\0';
+    //char raptor[1953];
+    char raptor[488*10+1];
+    rd_read(fd, raptor, len*10);
+    raptor[len*10]='\0';
     printf("%s", raptor);
 
     //close the file
     rd_close(fd);
 
-    more("/home/christmas/friends.txt");
+    //more("/home/christmas/friends.txt");
 
-
+    rd_unlink("/home/christmas/friends.txt");
 
 
 //@TODO: test interleaving
@@ -131,6 +138,8 @@ int main()
 
 int ls(char* path)
 {
+  printf("This is LS\n");
+
   char buffer[16];
   int fd = rd_open(path);
   if(fd < 0)
