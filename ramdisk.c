@@ -350,7 +350,16 @@ int rd_unlink(char *pathname)
     
     int retval;
 
-    //@TODO: Check if file is open somewhere
+    int idx = _ramdisk_walk_path(&ramdisk, pathname);
+    int pid = getpid();
+    
+    retval = fdtable_a_checkforinode(pid, idx,&fdtablea);
+
+    if (retval == 1)
+    {
+        printf("ERROR: Ramdisk:: unlink. Someone using file: %s\n", pathname);
+        return -1;
+    }
 
 /*
   //I'm a little confused about exactly what this is doing
