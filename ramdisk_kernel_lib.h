@@ -20,25 +20,30 @@ ramdisk_kernel_lib.h
 #ifndef RAMDISK_KERNEL_LIB_H
 #define RAMDISK_KERNEL_LIB_H
 
+#define DEBUG
+
 struct pathname_args_t {
 	char *pathname;
 	int str_len;
+	int ret_val;
 };
 
 struct close_args_t {
 	int fd;
+	int ret_val;
 };
 
 struct read_write_args_t {
 	int fd;
-	char *address;
-	int str_len;
 	int num_bytes;
+	int ret_val;
+	char *address;
 };
 
 struct seek_args_t {
 	int fd;
 	int offset;
+	int ret_val;
 };
 
 #define RD_CREAT _IOW(0, 6, struct pathname_args_t)
@@ -49,6 +54,7 @@ struct seek_args_t {
 #define RD_WRITE _IOW(0, 11, struct read_write_args_t)
 #define RD_SEEK _IOW(0, 12, struct seek_args_t)
 #define RD_READDIR _IOW(0, 13, struct read_write_args_t)
+#define RD_UNLINK _IOW(0, 14, struct pathname_args_t)
 
 #define PROC_MODULE_NAME "ramdisk_lib"
 
