@@ -26,7 +26,7 @@
 #define DIR_ENTRY_NAME_BYTES 14
 #define DIRECTORY_ENTRY_SIZE 16
 
-#define TABLE_SIZE 20
+#define TABLE_SIZE 64
 #define NUM_TABLES 20
 
 #define USE_PTHREADS

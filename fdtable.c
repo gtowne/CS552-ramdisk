@@ -49,7 +49,7 @@ int fdtable_createentry(int inodenum, struct Fdtable *fdtable)
      
     for (ii = 0; ii < fdtable->t_size; ii++)
     {
-        if (!fdtable->table[ii].being_used)
+        if (fdtable->table[ii].being_used == 0)
         {
             fdtable->table[ii].being_used = 1;
             fdtable->table[ii].inode_num  = inodenum;
@@ -104,6 +104,10 @@ int fdtable_removeatfd(int fd, struct Fdtable *fdtable)
     {
         if (fdtable->table[ii].fd == fd)
         {
+	    if(fdtable->table[ii].being_used != 1)
+	    {
+	      break;
+	    }
             fdtable->table[ii].being_used = 0;
             fdtable->table[ii].inode_num  = -1;
             fdtable->table[ii].offset = -1;

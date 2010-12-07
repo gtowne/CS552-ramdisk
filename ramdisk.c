@@ -65,7 +65,9 @@ int rd_creat(char *iPathname)
 
     if(finished >= 0)
     {
+  #ifdef DEBUG
       PRINT("RD_CREAT created file %d %s\n", finished, iPathname);
+#endif
       superblock_unlock(&(RAMDISK->superblock));
      return 0;
     }
@@ -93,8 +95,9 @@ int rd_mkdir(char *iPathname)
 
     if(finished >= 0)
     {
+  #ifdef DEBUG
       PRINT("RD_MKDIR Added directory %d %s\n", finished, iPathname);
-
+#endif
       superblock_unlock(&(RAMDISK->superblock));
       return 0;
     }
@@ -140,9 +143,13 @@ int rd_close(int fd)
     if (retval < 0)
     {
         PRINT("ERROR::: Ramdisk:: close: fdtable problem removing entry\n");
+	superblock_unlock(&(RAMDISK->superblock));  
+	return -1;
     }
     
+    #ifdef DEBUG
     PRINT("RD_CLOSE closed file descriptor %d\n", fd);
+    #endif
     
     superblock_unlock(&(RAMDISK->superblock));  
     return 0;
@@ -157,7 +164,7 @@ int rd_read(int fd, char* address, int num_bytes)
     int idx = fdtable_a_inodeforfd(pid, fd, &fdtablea);
     if (idx < 0)
     {
-        PRINT("ERROR::: Ramdisk:: read: fdtable problem getting inode number\n");
+      PRINT("ERROR::: Ramdisk:: read: fdtable problem getting inode number %d %d\n", pid, fd);
 	superblock_unlock(&(RAMDISK->superblock));
 	return -1;
     }
@@ -179,13 +186,21 @@ int rd_read(int fd, char* address, int num_bytes)
     }
 
     //eh. This is okay -- there is no way for the calling function to
-    //know how many bytes are in the file. Just do our best and return 0;
+    //know how many bytes are in the file. Just do our best and return
+    //the number of bytes we read.;
     //if(pos_in_file+num_bytes > node->size)
     //{
     //  PRINT("ERROR:: Ramdisk:: read. attempt to read past the end of the file\n");
     //  return 0;
     //}
     
+    if(pos_in_file >= node->size)
+    {
+      superblock_unlock(&(RAMDISK->superblock));
+      return 0;
+      //End of File
+    }
+
     //TODO: Memory twiddling
     int bytesToRead=num_bytes;
     if(pos_in_file + bytesToRead > node->size)
@@ -199,7 +214,6 @@ int rd_read(int fd, char* address, int num_bytes)
     struct Block* block;
     while(bytesToRead > 0)
     {
-      //PRINT("Ramdisk:: read: %d %d %d %d\n", node->size, pos_in_file, totalBytes, bytesToRead);
       if(pos_in_file >= node->size)
       {
 	//EOF
@@ -241,16 +255,12 @@ int rd_read(int fd, char* address, int num_bytes)
 	return -1;
     }
 
+    #ifdef DEBUG
     PRINT("RD_READ Read %d bytes from file descriptor %d %d %d\n", totalBytes, fd, pos_in_file, node->size);
-
-    if(pos_in_file >= node->size)
-    {
-      superblock_unlock(&(RAMDISK->superblock));
-      return 0; //EOF
-    }
+    #endif
     
     superblock_unlock(&(RAMDISK->superblock));
-    return 1;
+    return totalBytes;
 }
 
 int rd_write(int fd, char* address, int num_bytes)
@@ -295,14 +305,19 @@ int rd_write(int fd, char* address, int num_bytes)
       block = inode_get_block_for_byte_index(node, pos_in_file, &block_offset);
       if(block == NULL)
       {
+	if(node->size == 1067008)
+	{
+	  int q=5;
+	  q = node->size;
+	}
 	block = inode_add_block(node, RAMDISK);
-	block_fill(block); //so we can see any errors with offsets
 	if(block == NULL)
 	{
 	  PRINT("ERROR: Ramdisk:: write unable to allocate a new block\n");
 	  superblock_unlock(&(RAMDISK->superblock));
 	  return -1;
 	}
+	block_fill(block); //so we can see any errors with offsets
       }
       bytesWritten = block_copy_in(block, &(address[totalBytes]), 
 				   block_offset, bytesToWrite);
@@ -341,10 +356,12 @@ int rd_write(int fd, char* address, int num_bytes)
 	superblock_unlock(&(RAMDISK->superblock));
 	return -1;
     }
+    #ifdef DEBUG
     PRINT("RD_WRITE Wrote %d bytes to file descriptor %d\n", totalBytes, fd);
+    #endif
     
     superblock_unlock(&(RAMDISK->superblock));
-    return 0;
+    return totalBytes;
 }
 
 int rd_seek(int fd, int offset)
@@ -357,8 +374,9 @@ int rd_seek(int fd, int offset)
     {
         PRINT("ERROR::: Ramdisk:: seek: could not seek\n");
     }
+    #ifdef DEBUG
     PRINT("RD_SEEK Seeked to position %d in file descriptor %d\n", offset, fd);
-
+    #endif
 
     superblock_unlock(&(RAMDISK->superblock));
     return 0;
@@ -456,6 +474,9 @@ int rd_unlink(char *pathname)
       return -1;
     }
 
+#ifdef DEBUG
+    PRINT("RD_UNLINK unlinked file %s, %d\n", pathname, item);
+#endif
 
     superblock_unlock(&(RAMDISK->superblock));
     return 0;
@@ -485,6 +506,13 @@ int rd_readdir(int fd, char *address)
     
     //get the inode, check the size
     struct IndexNode* node = &(RAMDISK->inodes[idx]);
+    if(node->type != RAMDISK_DIR)
+    {
+      PRINT("ERROR:: Ramdisk:: readdir. can only read from a directory\n");
+      superblock_unlock(&(RAMDISK->superblock));
+      return -1;
+    }
+
     if(pos_in_file == node->size)
     {
       //EOF
@@ -494,11 +522,6 @@ int rd_readdir(int fd, char *address)
 
     //get the block for the right address
     int offset;
-    if(pos_in_file == 6400)
-    {
-      int p=0;
-      p=pos_in_file;
-    }
     struct Block* block = inode_get_block_for_byte_index(node, pos_in_file, &offset);
 
     //copy the memory
@@ -521,6 +544,10 @@ int rd_readdir(int fd, char *address)
 	return -1;
     }
     
+#ifdef DEBUG
+    PRINT("RD_READDIR Read entry from file descriptor %d\n", fd);
+#endif
+
     superblock_unlock(&(RAMDISK->superblock));
     return 1;
 }
@@ -567,6 +594,7 @@ int _ramdisk_initialize(struct Ramdisk* ramdisk)
 
 struct Block* _ramdisk_allocate_block(struct Ramdisk* ramdisk)
 {
+    //@TODO: use the superblock for book-keeping
   int ret;
   ret = bitmap_get_one_block(&(ramdisk->bitmap));
   if (ret < 0)
@@ -577,10 +605,13 @@ struct Block* _ramdisk_allocate_block(struct Ramdisk* ramdisk)
   
   if (ret < OVERHEAD_BLOCKS)
   {
-    PRINT("ERROR: Ramdisk::allocate_block: This block is not free!!\n");
+    PRINT("ERROR: Ramdisk::allocate_block: This block is part of the overhead!!\n");
+    return NULL;
   }
   
+#ifdef DEBUG
   PRINT("Ramdisk::allocate_block: allocated block # %d\n", ret);
+#endif
 
   int index = ret-OVERHEAD_BLOCKS;
   struct Block* block = &(ramdisk->blocks[index]);
@@ -598,6 +629,7 @@ struct Block* _ramdisk_allocate_block(struct Ramdisk* ramdisk)
 
 int _ramdisk_deallocate_block(struct Ramdisk* ramdisk, struct Block* block)
 {
+    //@TODO: use the superblock for book-keeping
   struct Block *begin, *end;
 
   begin=&(ramdisk->blocks[0]);
@@ -624,19 +656,24 @@ int _ramdisk_deallocate_block(struct Ramdisk* ramdisk, struct Block* block)
     return -1;
   }
 
+#ifdef DEBUG
   PRINT("Ramdisk::deallocate_block: deallocated block # %d\n", index+OVERHEAD_BLOCKS);
+#endif
   return 1;
 }
 
 int _ramdisk_allocate_inode(struct Ramdisk* ramdisk, enum NodeType type)
 {
+    //@TODO: use the superblock for book-keeping
   int i;
   for(i=0; i<INODES; i++)
   {
     if(ramdisk->inodes[i].type == RAMDISK_UNALLOCATED)
     {
       ramdisk->inodes[i].type = type;
+#ifdef DEBUG
       PRINT("Ramdisk::allocate_inode: allocated inode # %d\n", i);
+#endif
       return i;
     }
   }
@@ -650,6 +687,7 @@ int _ramdisk_allocate_inode(struct Ramdisk* ramdisk, enum NodeType type)
 
 int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index)
 {
+    //@TODO: use the superblock for book-keeping
   if(index < 0 || index >= INODES)
   {
     #ifdef DEBUG
@@ -659,11 +697,13 @@ int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index)
   }
 
   if(ramdisk->inodes[index].type == RAMDISK_UNALLOCATED)
+  {
 #ifdef DEBUG
     PRINT("Ramdisk::deallocate_inode: tried to deallocate unallocated inode\n");
 #endif
   return -1;
-  
+  }
+
   ramdisk->inodes[index].type = RAMDISK_UNALLOCATED;
   r_inode_init(&(ramdisk->inodes[index]));
   return 0;
@@ -755,7 +795,9 @@ int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* pare
    //increment the size of the block
    parent->size += DIRECTORY_ENTRY_SIZE;
 
+#ifdef DEBUG
    PRINT("Ramdisk:: add_directory_entry. Added entry \"%s\" (%x) to parent %x\n", name, &(ramdisk->inodes[childIdx]), parent);
+#endif
 
    return childIdx;
  }
@@ -849,8 +891,6 @@ int _ramdisk_walk_path(struct Ramdisk* ramdisk, char* name)
     //we know this is the root node
     return nodeIdx;
   }
-
-  //PRINT("Walk path: /");
   
   while(1==1)
   {
@@ -858,7 +898,6 @@ int _ramdisk_walk_path(struct Ramdisk* ramdisk, char* name)
     tokenLength= token_end-path_pos;
     if(name[path_pos]=='\0' || tokenLength == 0)
     {
-      //PRINT("...done\n");
       return nodeIdx;
     }
     if(tokenLength > DIR_ENTRY_NAME_BYTES)
@@ -870,7 +909,6 @@ int _ramdisk_walk_path(struct Ramdisk* ramdisk, char* name)
 
     str_copy(&(name[path_pos+1]), token, tokenLength);
     token[tokenLength-1]='\0';
-    //PRINT("/%s",token);
 
     nodeIdx = _ramdisk_find_directory_entry(ramdisk, node, token, NULL, NULL);
     if(nodeIdx < 0)

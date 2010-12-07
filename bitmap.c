@@ -135,7 +135,9 @@ int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap)
 		// We found the block size, return the start
 		if (consecutive == size)
 		{
+		  #ifdef DEBUG
 			PRINT("Bitmap:: findemptyblockofsize: Found block of size: %d at index: %d\n", size, start);
+		  #endif
 			return start;
 		}
 
