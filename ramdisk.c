@@ -55,6 +55,7 @@ int rd_creat(char *iPathname)
     int parent = _ramdisk_get_parent(&ramdisk, iPathname, token);
     if(parent < 0)
     {
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
 
@@ -65,11 +66,12 @@ int rd_creat(char *iPathname)
     if(finished >= 0)
     {
       printf("RD_CREAT created file %d %s\n", finished, iPathname);
+      superblock_unlock(&(ramdisk.superblock));
      return 0;
     }
-    return -1;
 
     superblock_unlock(&(ramdisk.superblock));
+    return -1;
 }
 
 int rd_mkdir(char *iPathname)
@@ -80,6 +82,7 @@ int rd_mkdir(char *iPathname)
     int parent = _ramdisk_get_parent(&ramdisk, iPathname, token);
     if(parent < 0)
     {
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
     int finished = _ramdisk_add_directory_entry(&ramdisk, &(ramdisk.inodes[parent]), 
@@ -91,11 +94,11 @@ int rd_mkdir(char *iPathname)
     {
       printf("RD_MKDIR Added directory %d %s\n", finished, iPathname);
 
+      superblock_unlock(&(ramdisk.superblock));
       return 0;
     }
-    return -1;
-
     superblock_unlock(&(ramdisk.superblock));
+    return -1;
 }
 
 int rd_open(char *pathname)
@@ -106,6 +109,7 @@ int rd_open(char *pathname)
     if(idx < 0)
     {
       printf("ERROR::: Ramdisk:: rd_open: Could not find file %s\n", pathname);
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
 
@@ -121,9 +125,8 @@ int rd_open(char *pathname)
     printf("RD_OPEN Opened: %s, inode:%d, fd:%d\n", pathname, idx, fd);
     #endif
     
+    superblock_unlock(&(ramdisk.superblock));
     return fd; 
-
-    superblock_unlock(&(ramdisk.superblock));  
 }
 
 int rd_close(int fd)
@@ -140,9 +143,8 @@ int rd_close(int fd)
     
     printf("RD_CLOSE closed file descriptor %d\n", fd);
     
+    superblock_unlock(&(ramdisk.superblock));  
     return 0;
-
-    superblock_unlock(&(ramdisk.superblock));
 }
 
 int rd_read(int fd, char* address, int num_bytes)
@@ -155,12 +157,14 @@ int rd_read(int fd, char* address, int num_bytes)
     if (idx < 0)
     {
         printf("ERROR::: Ramdisk:: read: fdtable problem getting inode number\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
     }
     struct IndexNode* node = &(ramdisk.inodes[idx]);
     if(node->type != RAMDISK_FILE)
     {
       printf("ERROR:: Ramdisk:: read. can only read from a regular file\n");
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
 
@@ -169,6 +173,7 @@ int rd_read(int fd, char* address, int num_bytes)
     if (pos_in_file < 0)
     {
         printf("ERROR::: Ramdisk:: read: fdtable problem getting offset\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
     }
 
@@ -205,6 +210,7 @@ int rd_read(int fd, char* address, int num_bytes)
       if(block == NULL)
       {
 	printf("ERROR:: Ramdisk:: read. error retrieving block\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
       }
       bytesRead = block_copy_out(block, &(address[totalBytes]),
@@ -213,6 +219,7 @@ int rd_read(int fd, char* address, int num_bytes)
       if(bytesRead < 0)
       {
 	printf("ERROR: Ramdisk:: read. error reading from block\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
       }
       else
@@ -229,6 +236,7 @@ int rd_read(int fd, char* address, int num_bytes)
     if (retval < 0)
     {
         printf("ERROR::: Ramdisk:: read: fdtable problem seeking\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
     }
 
@@ -236,12 +244,12 @@ int rd_read(int fd, char* address, int num_bytes)
 
     if(pos_in_file >= node->size)
     {
+      superblock_unlock(&(ramdisk.superblock));
       return 0; //EOF
     }
     
-    return 1;
-
     superblock_unlock(&(ramdisk.superblock));
+    return 1;
 }
 
 int rd_write(int fd, char* address, int num_bytes)
@@ -254,6 +262,7 @@ int rd_write(int fd, char* address, int num_bytes)
     if (idx < 0)
     {
         printf("ERROR::: Ramdisk:: write: fdtable problem getting inode number\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
     }
 
@@ -261,6 +270,7 @@ int rd_write(int fd, char* address, int num_bytes)
     if(node->type != RAMDISK_FILE)
     {
       printf("ERROR:: Ramdisk:: write. can only write to a regular file\n");
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
 
@@ -269,6 +279,7 @@ int rd_write(int fd, char* address, int num_bytes)
     if (pos_in_file < 0)
     {
         printf("ERROR::: Ramdisk:: write: fdtable problem getting offset\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
     }
 
@@ -288,6 +299,7 @@ int rd_write(int fd, char* address, int num_bytes)
 	if(block == NULL)
 	{
 	  printf("ERROR: Ramdisk:: write unable to allocate a new block\n");
+	  superblock_unlock(&(ramdisk.superblock));
 	  return -1;
 	}
       }
@@ -296,6 +308,7 @@ int rd_write(int fd, char* address, int num_bytes)
       if(bytesWritten < 0)
       {
 	printf("ERROR: Ramdisk:: write error writing to block\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
       }
       else
@@ -318,13 +331,13 @@ int rd_write(int fd, char* address, int num_bytes)
     if (retval < 0)
     {
         printf("ERROR::: Ramdisk:: write: fdtable problem seeking\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
     }
     printf("RD_WRITE Wrote %d bytes to file descriptor %d\n", totalBytes, fd);
     
-    return 0;
-
     superblock_unlock(&(ramdisk.superblock));
+    return 0;
 }
 
 int rd_seek(int fd, int offset)
@@ -339,9 +352,9 @@ int rd_seek(int fd, int offset)
     }
     printf("RD_SEEK Seeked to position %d in file descriptor %d\n", offset, fd);
 
-    return 0;
 
     superblock_unlock(&(ramdisk.superblock));
+    return 0;
 }
 
 int rd_unlink(char *pathname)
@@ -358,6 +371,8 @@ int rd_unlink(char *pathname)
     if (retval == 1)
     {
         printf("ERROR: Ramdisk:: unlink. Someone using file: %s\n", pathname);
+
+	superblock_unlock(&(ramdisk.superblock));
         return -1;
     }
 
@@ -380,6 +395,8 @@ int rd_unlink(char *pathname)
     if(parent < 0)
     {
       printf("ERROR: Ramdisk:: unlink. Invalid path %s\n", pathname);
+
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
     struct IndexNode* parentInode = &(ramdisk.inodes[parent]);
@@ -392,6 +409,8 @@ int rd_unlink(char *pathname)
     if(item < 0)
     {
       printf("ERROR: Ramdisk:: unlink. Invalid path %s\n", pathname);
+
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
 
@@ -400,6 +419,8 @@ int rd_unlink(char *pathname)
     if(itemNode->type == RAMDISK_DIR && _ramdisk_directory_isempty()==-1)
     {
       printf("ERROR: Ramdisk:: unlink. Attempted to unlink non-empty directory\n", pathname);
+
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
 
@@ -436,12 +457,14 @@ int rd_unlink(char *pathname)
     if(retval < 0)
     {
       printf("ERROR: Ramdisk:: unlink. error removing directory entry\n", pathname);
+
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
 
-    return 0;
-    
+
     superblock_unlock(&(ramdisk.superblock));
+    return 0;
 }
 
 int rd_readdir(int fd, char *address)
@@ -454,6 +477,7 @@ int rd_readdir(int fd, char *address)
     if (idx < 0)
     {
         printf("ERROR::: Ramdisk:: readir: could not get inode index from fdtable\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
     }
     // Find the last position we read/wrote from in the file
@@ -461,6 +485,7 @@ int rd_readdir(int fd, char *address)
     if (pos_in_file < 0)
     {
         printf("ERROR::: Ramdisk:: readdir: fdtable problem getting offset\n");
+	superblock_unlock(&(ramdisk.superblock));
 	return -1;
     }
     
@@ -469,6 +494,7 @@ int rd_readdir(int fd, char *address)
     if(pos_in_file == node->size)
     {
       //EOF
+      superblock_unlock(&(ramdisk.superblock));
       return 0;
     }
 
@@ -482,13 +508,9 @@ int rd_readdir(int fd, char *address)
     if(bytesWritten != DIRECTORY_ENTRY_SIZE)
     {
       printf("ERROR::: Ramdisk:: readir: error copying directory entry out of block\n");
+      superblock_unlock(&(ramdisk.superblock));
       return -1;
     }
-
-    // AAARRRRRGGHHH. If we don't keep the entries in the directories
-    // compact, then we have to check that the contents of anything we
-    // return is good.
-
 
     //move the pointer
     pos_in_file += DIRECTORY_ENTRY_SIZE;
@@ -496,12 +518,12 @@ int rd_readdir(int fd, char *address)
     if (retval < 0)
     {
         printf("ERROR::: Ramdisk:: readdir: fdtable problem seeking\n");
+      superblock_unlock(&(ramdisk.superblock));
 	return -1;
     }
     
-    return 1;
-    
     superblock_unlock(&(ramdisk.superblock));
+    return 1;
 }
 
 
