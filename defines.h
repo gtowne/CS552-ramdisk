@@ -31,6 +31,12 @@
 
 #define USE_PTHREADS
 
+#ifdef USE_PTHREADS
+#define PRINT printf
+#else
+#define PRINT printk
+#endif
+
 #endif
 
 

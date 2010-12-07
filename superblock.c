@@ -58,6 +58,7 @@ int superblock_setfreeinodes(short num, struct Superblock *superblock)
 int superblock_lock(struct Superblock *superblock)
 {
     #ifdef USE_PTHREADS
+  //PRINT("LOCK\n");
     return pthread_mutex_lock(&superblock->mutex);
     #else
     down_interruptible(&superblock->mutex);
@@ -69,6 +70,7 @@ int superblock_lock(struct Superblock *superblock)
 int superblock_unlock(struct Superblock *superblock)
 {
     #ifdef USE_PTHREADS
+  //PRINT("UNLOCK\n");
     return pthread_mutex_unlock(&superblock->mutex);
     #else
     up(&superblock->mutex);
@@ -79,14 +81,14 @@ int superblock_unlock(struct Superblock *superblock)
 
 int _superblock_print(struct Superblock *superblock)
 {
-    printf("\nSUPERBLOCK");
+    PRINT("\nSUPERBLOCK");
     #ifdef USE_PTHREADS
-    printf(" - using pthreads\n"); 
+    PRINT(" - using pthreads\n"); 
     #else
-    printf(" - in the kernel\n");
+    PRINT(" - in the kernel\n");
     #endif
-    printf("-----------------\n");
-    printf("free blocks: %d\n", superblock->free_blocks);
-    printf("free inodes: %d\n", superblock->free_inodes);
+    PRINT("-----------------\n");
+    PRINT("free blocks: %d\n", superblock->free_blocks);
+    PRINT("free inodes: %d\n", superblock->free_inodes);
     return 0;
 }

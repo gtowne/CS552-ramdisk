@@ -46,7 +46,7 @@ int bitmap_setatindex(int index, struct Bitmap *bitmap)
 	if (index < 0 || index > TOTAL_BLOCKS-1)
 	{
 #ifdef DEBUG
-		printf("Bitmap:: setatindex: index out of range\n");
+		PRINT("Bitmap:: setatindex: index out of range\n");
 #endif
 		return -1;
 	}
@@ -57,13 +57,13 @@ int bitmap_setatindex(int index, struct Bitmap *bitmap)
 	if (_bitmap_isset(char_index, shift, bitmap))
 	{
 		#ifdef DEBUG
-		printf("Bitmap:: could not set bit at: %d, bit already set\n",index);
+		PRINT("Bitmap:: could not set bit at: %d, bit already set\n",index);
 		#endif
 		return -1;
 	}
 	
 	#ifdef DEBUG
-	printf("Bitmap:: setatindex: %d char_index = %d  shift = %d\n",index, char_index, shift);
+	PRINT("Bitmap:: setatindex: %d char_index = %d  shift = %d\n",index, char_index, shift);
 	#endif
 
 	_bitmap_set(char_index, shift, bitmap);
@@ -76,7 +76,7 @@ int bitmap_removeatindex(int index, struct Bitmap *bitmap)
 {
 	if (index < 0 || index > TOTAL_BLOCKS-1)
 	{
-		printf("Bitmap:: removeatindex: index out of range\n");
+		PRINT("Bitmap:: removeatindex: index out of range\n");
 		return -1;
 	}
 
@@ -84,7 +84,7 @@ int bitmap_removeatindex(int index, struct Bitmap *bitmap)
 	int shift		= index % 8;
 
 	#ifdef DEBUG
-	printf("Bitmap:: removeatindex: %d char_index = %d  shift = %d\n",index, char_index, shift);
+	PRINT("Bitmap:: removeatindex: %d char_index = %d  shift = %d\n",index, char_index, shift);
 	#endif
 
 	_bitmap_unset(char_index, shift, bitmap);
@@ -97,7 +97,7 @@ int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap)
 {
 	if (bitmap->num_empty == 0)
 	{
-		printf("Bitmap:: findemptyblockofsize: no more empty blocks\n");
+		PRINT("Bitmap:: findemptyblockofsize: no more empty blocks\n");
 		return -1;
 	}
 	
@@ -135,14 +135,14 @@ int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap)
 		// We found the block size, return the start
 		if (consecutive == size)
 		{
-			printf("Bitmap:: findemptyblockofsize: Found block of size: %d at index: %d\n", size, start);
+			PRINT("Bitmap:: findemptyblockofsize: Found block of size: %d at index: %d\n", size, start);
 			return start;
 		}
 
 		// Traveled the whole thing and did not find anything
 		if (traveled == TOTAL_BLOCKS)
 		{
-			printf("Bitmap:: findemptyblockofsize: no empty blocks of that size\n");
+			PRINT("Bitmap:: findemptyblockofsize: no empty blocks of that size\n");
 			return -1;
 		}
 		traveled++;
@@ -156,7 +156,7 @@ int bitmap_get_one_block(struct Bitmap* bitmap)
 {
 	if (bitmap->num_empty == 0)
 	{
-		printf("Bitmap:: setblockofsize: no more empty blocks\n");
+		PRINT("Bitmap:: setblockofsize: no more empty blocks\n");
 		return -1;
 	}
 
@@ -170,7 +170,7 @@ int bitmap_setblockofsize(int size, struct Bitmap* bitmap)
 {
 	if (bitmap->num_empty == 0)
 	{
-		printf("Bitmap:: setblockofsize: no more empty blocks\n");
+		PRINT("Bitmap:: setblockofsize: no more empty blocks\n");
 		return -1;
 	}
 
@@ -190,7 +190,7 @@ int bitmap_setblockofsize(int size, struct Bitmap* bitmap)
 		
 		if (count == size)
 		{
-			printf("Bitmap:: setblockofsize: Set block of size: %d at index: %d\n", size, start);
+			PRINT("Bitmap:: setblockofsize: Set block of size: %d at index: %d\n", size, start);
 			bitmap->num_empty += size;
 			return index;
 		}
@@ -218,7 +218,7 @@ int bitmap_removeblockofsize	(int index, int size, struct Bitmap* bitmap)
 		
 		if (count == size)
 		{
-			printf("Bitmap:: setblockofsize: Set block of size: %d at index: %d\n", size, start);
+			PRINT("Bitmap:: setblockofsize: Set block of size: %d at index: %d\n", size, start);
 			bitmap->num_empty += size;
 			return 0;
 		}
@@ -278,11 +278,11 @@ int _bitmap_printhchar(char a)
 		kk = a & mask;
 		if( kk == 0)
 		{
-			printf("0");
+			PRINT("0");
 		}
 		else
 		{
-			printf("1");
+			PRINT("1");
 		}
 	}
 
@@ -295,13 +295,13 @@ int _bitmap_print_nice(struct Bitmap *bitmap)
 	
 	for (ii = 0; ii < BITMAP_NUM_BYTES; ii++)
 	{
-		printf("%d: ", ii);
+		PRINT("%d: ", ii);
 		
 		_bitmap_printhchar(bitmap->array[ii]);
-		printf("\n");
+		PRINT("\n");
 
 	}
-    printf("\n");
+    PRINT("\n");
 	return 0;
 }
 
@@ -316,9 +316,9 @@ int _bitmap_print_raw(struct Bitmap *bitmap)
 		
 		if (ii%13 == 0 && ii != 0)
 		{
-			printf("\n");
+			PRINT("\n");
 		}
 	}
-    printf("\n");
+    PRINT("\n");
 	return 0;
 }

@@ -1,62 +1,79 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "ramdisk.h"
 
-struct Ramdisk ramdisk;
+struct Ramdisk* RAMDISK;
 struct FdtableArray fdtablea;
 
 int main()
 {
     char name[14] = "/aaaa";
+    RAMDISK = malloc(sizeof(struct Ramdisk));
 
-    _ramdisk_initialize(&ramdisk);
+    _ramdisk_initialize(RAMDISK);
 
     //create a directory that requires more than one block
+    //(use all of the direct pointers)
     int i;
-    for(i=0; i<150; i++)
+    int numdirectories=128;
+    for(i=0; i<numdirectories; i++)
     {
       sprintf(name, "/a%d", i);
       int q = rd_creat(name);
       printf("%d %d %s\n", i, q, name); 
-      //name[1]++;
     }
     //test readdir
     ls("/");
 
-    name[1]='a';
-    for(i=0; i<10; i++)
-    {
-      sprintf(name, "/a%d", i);
-      rd_unlink(name);
-      //name[1]++;
-    }
-    printf("unlinked 10 files\n");
-    ls("/");
-
-    for(; i<150; i++)
+    for(i=0; i<numdirectories; i++)
     {
       sprintf(name, "/a%d", i);
       rd_unlink(name);
     }
 
+    //now, use some of the indirect pointers
+    //(and max out the inodes)
+    numdirectories=1023;
+    for(i=0; i<numdirectories; i++)
+    {
+      sprintf(name, "/a%d", i);
+      int q = rd_creat(name);
+      printf("%d %d %s\n", i, q, name); 
+    }
+    //test readdir
     ls("/");
 
-    //return 0;
+    for(i=0; i<numdirectories; i++)
+    {
+      sprintf(name, "/a%d", i);
+      rd_unlink(name);
+    }
+
+    //@TODO: Make sure behavior is correct when we go over the number
+    //of iNodes
+    //@TODO: use the superblock for book-keeping
+
+    ls("/");
+
+
+    //@TODO: Test unlinking subdirectories of the root
+
 
     //test making subdirectories and regular files
     rd_mkdir("/home");
     rd_mkdir("/home/christmas");
     rd_creat("/home/christmas/cranberry.txt");
     rd_creat("/home/christmas/candycane.txt");
-    rd_creat("/home/christmas/cookies.txt");
-    rd_creat("/home/christmas/friends.txt");
+
 
     //test readdir
     ls("/home/christmas");
 
 
-    //writing lots of little pieces
+    //reading and writing in the direct pointer blocks
+    rd_creat("/home/christmas/cookies.txt");
     int repeats=5;
     int fd = rd_open("/home/christmas/cookies.txt");
     char* string1 = "c is for cookie that's good enough for me. "; //43
@@ -82,15 +99,15 @@ int main()
     {
       rd_read(fd, buffer, 175);
       buffer[176]='\0';
-      printf("%s \n-.-.-.-\n", buffer);
+      //printf("%s \n-.-.-.-\n", buffer);
     }
     fd = rd_close(fd);
 
     rd_unlink("/home/christmas/cookies.txt");
 
-    //return 0;
 
-    //writing/reading one big chunk
+    //reading and writing in the single indirect blocks
+    rd_creat("/home/christmas/friends.txt");
     fd = rd_open("/home/christmas/friends.txt");
     char * logo=
 " _____                     ______            _              \n\
@@ -102,9 +119,10 @@ int main()
                                       | |                   \n\
                                       |_|                   \n";
     int len = strlen(logo);
+    int repetitions=10;
     printf("%d\n%s", len, logo);
     //write some longer, multi-block chunks
-    for(i=0; i<10; i++)
+    for(i=0; i<repetitions; i++)
     {
       rd_write(fd, logo, len);
     }
@@ -116,22 +134,50 @@ int main()
     //char raptor[1953];
     char raptor[488*10+1];
     rd_read(fd, raptor, len*10);
-    raptor[len*10]='\0';
+    raptor[len*repetitions]='\0';
     printf("%s", raptor);
 
     //close the file
     rd_close(fd);
 
-    //more("/home/christmas/friends.txt");
-
     rd_unlink("/home/christmas/friends.txt");
 
 
-//@TODO: test interleaving
+    // Test the double indirect pointers
+    rd_creat("/home/christmas/big.txt");
+    fd = rd_open("/home/christmas/big.txt");
+    for(i=0; i<40; i++)
+    {
+      rd_write(fd, logo, len);
+    }
+
+    //seek to somewhere inside the double indirect pointers
+    rd_seek(fd, 488*38);
+
+    //read the last two iterations
+    rd_read(fd, raptor, len*2);
+    raptor[len*2]='\0';
+    printf("%s", raptor);
+    rd_close(fd);
+
+    rd_unlink("/home/christmas/big.txt");
 
 
-    //this should fail
-    //int p = rd_mkdir("/usr/blah/bin");
+    //test unlinking directories that are subdirectories of the root
+    rd_unlink("/home/christmas/cranberry.txt");
+    rd_unlink("/home/christmas/candycane.txt");
+    rd_unlink("/home/christmas");
+    rd_unlink("/home");
+
+    //@TODO: test multiple file handles open
+    //@TODO: test interleaving reads/writes of multiple files
+    //@TODO: test unlinking open files
+    //@TODO: test unlinking non-existent files
+    //@TODO: test making entry of non-existent directory
+    //@TODO: try using up all the blocks in the filesystem
+    //@TODO: write something to all the little files we create in the beginning
+
+    //@TODO: make "cat" and "i_cat" functions
 
     return 0;
 }
