@@ -52,12 +52,12 @@ int str_equals(char* str1, char* str2, int max_chars) {
 
 int str_len(char* str, int max_chars)
 {
+  int i;
   if(str == NULL)
   {
     return 0;
   }
   
-  int i;
   for (i = 0; i < max_chars; i++) {
     if(str[i]=='\0')
     {
@@ -115,12 +115,3 @@ int str_path_number(char* pathname)
 
     return count;
 }
-
-
-
-
-
-
-
-
-

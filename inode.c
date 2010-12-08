@@ -27,6 +27,7 @@ const int DoubleIndexedBytes=BLOCK_BYTES*(BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTR
 void r_inode_init(struct IndexNode* iNode)
 {
   int i;
+
   iNode->type = RAMDISK_UNALLOCATED;
   iNode->size = 0;
   for(i=0; i<IndexNodeDirectPointers; i++)
@@ -51,15 +52,26 @@ void r_inode_init(struct IndexNode* iNode)
 struct Block* inode_get_block_for_byte_index(struct IndexNode* iNode, 
                                       int address, int* oBlockOffset)
 {
+  int blockIdx;
+  int q;
+  int indirectIdx;
+  int entries_squared;
+  int numDoublePointers;
+  int doubleIdx;
+  int indirectIdx;
+  struct Block* block;
+  struct Block* doubleIndirect;
+  struct Block* indirect;
+  
   if(oBlockOffset != NULL)
   {
     *oBlockOffset = address % BLOCK_BYTES;
   }
 
-  int blockIdx = address / BLOCK_BYTES;
+  blockIdx = address / BLOCK_BYTES;
   if(blockIdx == 24)
   {
-    int q=0;
+    q=0;
     blockIdx = 24;
   }
 
@@ -73,36 +85,36 @@ struct Block* inode_get_block_for_byte_index(struct IndexNode* iNode,
   
   if(blockIdx < BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers)
   {
-    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
     blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
     //does the null check inside the function
-    struct Block* block = block_at(iNode->indirectPointer[indirectIdx], 
+    block = block_at(iNode->indirectPointer[indirectIdx], 
 				   blockIdx);
     return block;
   }
 
   //double Indirect pointers
-  int entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
+  entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
   blockIdx -= BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers;
-  int numDoublePointers = entries_squared * IndexNodeDoublePointers;
+  numDoublePointers = entries_squared * IndexNodeDoublePointers;
   if(blockIdx < numDoublePointers)
   {
-    int doubleIdx = blockIdx / (entries_squared);
+    doubleIdx = blockIdx / (entries_squared);
     blockIdx -= doubleIdx * entries_squared;
-    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
     blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
     
-    struct Block* doubleIndirect=iNode->doublePointer[doubleIdx];
+    doubleIndirect=iNode->doublePointer[doubleIdx];
     if(doubleIndirect == NULL)
     {
       return NULL;
     }
-    struct Block* indirect=block_at(doubleIndirect, indirectIdx);
+    indirect=block_at(doubleIndirect, indirectIdx);
     if(indirect == NULL)
     {
       return NULL;
     }
-    struct Block* block = block_at(indirect, blockIdx);
+    block = block_at(indirect, blockIdx);
     return block;
   }  
   
@@ -127,21 +139,30 @@ struct Block* inode_get_last_block(struct IndexNode* iNode, int* oBlockOffset)
 struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
 {
   int retval;
-  struct Block* block = _ramdisk_allocate_block(iRamDisk);
+  int i;
+  int blockIdx;
+  int indirectIdx;
+  int entries_squared;
+  int numDoublePointers;
+  int doubleIdx;
+  int indirectIdx;
+  struct Block* block;
+  struct Block* indirect
+
+  block = _ramdisk_allocate_block(iRamDisk);
   if(block == NULL)
   {
     return NULL;
   }
 
   //find the next place to add a block.
-  int i;
 
   //let's assume that we only add blocks at the end of the file.
   //and let's assume that iNode->size is just after the last block
   //currently in the file
 
   //direct pointers
-  int blockIdx = iNode->size / BLOCK_BYTES;
+  blockIdx = iNode->size / BLOCK_BYTES;
   if(blockIdx < IndexNodeDirectPointers)
   {
       iNode->directPointer[blockIdx] = block;
@@ -153,7 +174,7 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   
   if(blockIdx < BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers)
   {
-    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
     blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
 
     if(iNode->indirectPointer[indirectIdx] == NULL)
@@ -185,14 +206,14 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   }
 
   //double indirect pointers
-  int entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
+  entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
   blockIdx -= BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers;
-  int numDoublePointers = entries_squared * IndexNodeDoublePointers;
+  numDoublePointers = entries_squared * IndexNodeDoublePointers;
   if(blockIdx < numDoublePointers)
   {
-    int doubleIdx = blockIdx / (entries_squared);
+    doubleIdx = blockIdx / (entries_squared);
     blockIdx -= doubleIdx * entries_squared;
-    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
     blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
 
     //need to allocate a block for the double pointer
@@ -210,7 +231,7 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
       }  
     }
     
-    struct Block* indirect = block_at(iNode->doublePointer[doubleIdx],
+    indirect = block_at(iNode->doublePointer[doubleIdx],
 				      indirectIdx);
     //need to allocate a block for the indirect pointer
     if(indirect == NULL)
@@ -315,6 +336,10 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
 int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk, 
 		      int reduce)
 {
+  int dummy;
+  struct Block* currentLastBlock;
+  struct Block* hypothetical;
+
   if(iNode == NULL || iRamDisk == NULL || reduce < 0)
   {
     return -1;
@@ -325,9 +350,8 @@ int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk,
   }
 
   //find the current last block
-  int dummy;
-  struct Block* currentLastBlock = inode_get_block_for_byte_index(iNode, iNode->size-1, &dummy);
-  struct Block* hypothetical = 
+  currentLastBlock = inode_get_block_for_byte_index(iNode, iNode->size-1, &dummy);
+  hypothetical = 
     inode_get_block_for_byte_index(iNode, iNode->size-reduce-1, &dummy);
 
   if(currentLastBlock != hypothetical)
@@ -343,9 +367,19 @@ int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk,
 
 int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
 {
+  int blockIdx;
+  int indirectIdx;
+  int entries_squared;
+  int numDoublePointers;
+  int doubleIdx;
+  int indirectIdx;
+  struct Block* doomed;
+  struct Block* doubleIndirect;
+  struct Block* indirect;
+  struct Block* block;
 
   //is this minus one the right thing to do?
-  int blockIdx = (iNode->size -1) / BLOCK_BYTES;
+  blockIdx = (iNode->size -1) / BLOCK_BYTES;
   if(blockIdx < IndexNodeDirectPointers)
   {
     if(iNode->directPointer[blockIdx] != NULL)
@@ -360,10 +394,10 @@ int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   blockIdx -= IndexNodeDirectPointers;
   if(blockIdx < BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers)
   { 
-    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
     blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
     //does the null check inside the function
-    struct Block* doomed = block_at(iNode->indirectPointer[indirectIdx], 
+    doomed = block_at(iNode->indirectPointer[indirectIdx], 
 				    blockIdx);
     if(doomed != NULL)
     {
@@ -381,27 +415,27 @@ int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   
   
   //@TODO: Double Indirect pointers
-  int entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
+  entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
   blockIdx -= BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers;
-  int numDoublePointers = entries_squared * IndexNodeDoublePointers;
+  numDoublePointers = entries_squared * IndexNodeDoublePointers;
   if(blockIdx < numDoublePointers)
   {
-    int doubleIdx = blockIdx / (entries_squared);
+    doubleIdx = blockIdx / (entries_squared);
     blockIdx -= doubleIdx * entries_squared;
-    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
     blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
     
-    struct Block* doubleIndirect=iNode->doublePointer[doubleIdx];
+    doubleIndirect=iNode->doublePointer[doubleIdx];
     if(doubleIndirect == NULL)
     {
       return -1;
     }
-    struct Block* indirect=block_at(doubleIndirect, indirectIdx);
+    indirect=block_at(doubleIndirect, indirectIdx);
     if(indirect == NULL)
     {
       return -1;
     }
-    struct Block* block = block_at(indirect, blockIdx);
+    block = block_at(indirect, blockIdx);
     _ramdisk_deallocate_block(iRamDisk, block);
     set_indirect_storage_block(indirect, blockIdx, NULL);
     
@@ -432,12 +466,17 @@ int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
 int inode_release(struct IndexNode* iNode,
 		   struct Ramdisk* iRamDisk)
 {
+  int i;
+  int j,k;
+  struct Block* block;
+  struct Block* doubleIndirect;
+  struct Block* indirect;
+
   if(iNode == NULL || iRamDisk == NULL)
   {
     return -1;
   }
 
-  int i;
   // if it's in the direct pointers, you are done
   for(i=0; i<IndexNodeDirectPointers; i++)
   {
@@ -458,10 +497,10 @@ int inode_release(struct IndexNode* iNode,
     {
       return 1;
     }
-    int j;
+    
     for(j=0; j<BLOCK_PTRS_PER_STORAGE_BLOCK; j++)
     {
-      struct Block* block = block_at(iNode->indirectPointer[i], j);
+      block = block_at(iNode->indirectPointer[i], j);
       if(block == NULL)
       {
 	break;
@@ -479,18 +518,18 @@ int inode_release(struct IndexNode* iNode,
     {
       return 1;
     }
-    int j,k;
-    struct Block* doubleIndirect=iNode->doublePointer[i];
+
+    doubleIndirect=iNode->doublePointer[i];
     for(j=0; j<BLOCK_PTRS_PER_STORAGE_BLOCK; j++)
     {
-      struct Block* indirect=block_at(doubleIndirect, j);     
+      indirect=block_at(doubleIndirect, j);     
       if(indirect == NULL)
       {
 	break;
       }
       for(k=0; k<BLOCK_PTRS_PER_STORAGE_BLOCK; k++)
       {
-	struct Block* block = block_at(indirect, k);
+	block = block_at(indirect, k);
 	if(block == NULL)
 	{
 	  break;
