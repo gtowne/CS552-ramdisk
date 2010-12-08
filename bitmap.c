@@ -43,6 +43,9 @@ int bitmap_initialize(struct Bitmap *bitmap)
 
 int bitmap_setatindex(int index, struct Bitmap *bitmap)
 {
+    int char_index;
+    int shift;
+    
 	if (index < 0 || index > TOTAL_BLOCKS-1)
 	{
 #ifdef DEBUG
@@ -51,8 +54,8 @@ int bitmap_setatindex(int index, struct Bitmap *bitmap)
 		return -1;
 	}
 	
-	int char_index 	= index / 8;
-	int shift		= index % 8;
+	char_index 	= index / 8;
+	shift		= index % 8;
 	
 	if (_bitmap_isset(char_index, shift, bitmap))
 	{
@@ -74,14 +77,17 @@ int bitmap_setatindex(int index, struct Bitmap *bitmap)
 
 int bitmap_removeatindex(int index, struct Bitmap *bitmap)
 {
+    int char_index;
+    int shift;
+    
 	if (index < 0 || index > TOTAL_BLOCKS-1)
 	{
 		PRINT("Bitmap:: removeatindex: index out of range\n");
 		return -1;
 	}
 
-	int char_index 	= index / 8;
-	int shift		= index % 8;
+	char_index 	= index / 8;
+	shift		= index % 8;
 
 	#ifdef DEBUG
 	PRINT("Bitmap:: removeatindex: %d char_index = %d  shift = %d\n",index, char_index, shift);
@@ -95,6 +101,12 @@ int bitmap_removeatindex(int index, struct Bitmap *bitmap)
 
 int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap)
 {
+    	int index;
+	int traveled;
+	int consecutive;
+	int start;
+	int first;
+	
 	if (bitmap->num_empty == 0)
 	{
 		PRINT("Bitmap:: findemptyblockofsize: no more empty blocks\n");
@@ -102,11 +114,11 @@ int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap)
 	}
 	
 	//TODO: Decide if we want to start at 0...at random....or keep the last allocated block index
-	int index = 0;//random(BITMAP_NUM_BYTES);
-	int traveled = 1;
-	int consecutive = 0;
-	int start = index;
-	int first = 1;
+	index = 0;//random(BITMAP_NUM_BYTES);
+	traveled = 1;
+	consecutive = 0;
+	start = index;
+	first = 1;
 
 	while (1==1)
 	{	
@@ -156,13 +168,15 @@ int bitmap_findemptyblockofsize	(int size, struct Bitmap* bitmap)
 
 int bitmap_get_one_block(struct Bitmap* bitmap)
 {
+    int index;
+    
 	if (bitmap->num_empty == 0)
 	{
 		PRINT("Bitmap:: setblockofsize: no more empty blocks\n");
 		return -1;
 	}
 
-	int index = bitmap_findemptyblockofsize(1, bitmap);
+	index = bitmap_findemptyblockofsize(1, bitmap);
 	bitmap_setatindex(index, bitmap);
 	bitmap->num_empty --;
 	return index;
@@ -170,15 +184,19 @@ int bitmap_get_one_block(struct Bitmap* bitmap)
 
 int bitmap_setblockofsize(int size, struct Bitmap* bitmap)
 {
+    int index;
+    int start;
+    int count;
+    
 	if (bitmap->num_empty == 0)
 	{
 		PRINT("Bitmap:: setblockofsize: no more empty blocks\n");
 		return -1;
 	}
 
-	int index = bitmap_findemptyblockofsize(size, bitmap);
-	int start = index;
-	int count = 0;
+	index = bitmap_findemptyblockofsize(size, bitmap);
+	start = index;
+	count = 0;
 	
 	while (1==1)
 	{
@@ -205,8 +223,11 @@ int bitmap_setblockofsize(int size, struct Bitmap* bitmap)
 
 int bitmap_removeblockofsize	(int index, int size, struct Bitmap* bitmap)
 {
-	int start = index;
-	int count = 0;
+    int start;
+	int count;
+	
+	start = index;
+	count = 0;
 	
 	while (1==1)
 	{
@@ -240,8 +261,11 @@ int _bitmap_isset(int block, int bit, struct Bitmap *bitmap)
 
 int _bitmap_isset_b(int bitnum, struct Bitmap *bitmap)
 {
-	int block 	= bitnum/8;
-	int bit 		= bitnum%8;
+    int block;
+    int bit; 
+    
+	block 	= bitnum/8;
+	bit 		= bitnum%8;
 
 	return _bitmap_isset(block, bit, bitmap);
 }

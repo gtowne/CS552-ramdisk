@@ -35,7 +35,7 @@ This implements the superblock part of the assignment
 #include <asm/semaphore.h>
 #endif
 
-typedef struct Superblock //Bitmap struct
+struct Superblock //Bitmap struct
 {
     short free_blocks;
     short free_inodes;
@@ -46,7 +46,7 @@ typedef struct Superblock //Bitmap struct
     //struct semaphore mutex;
     unsigned char filler[BLOCK_BYTES - 2*sizeof(short)];
     #endif
-}Superblock;
+};
 
 int superblock_initialize    (struct Superblock *superblock);            // Initializes superblock with the right values
 int superblock_getfreeblocks (struct Superblock *superblock);            // Gets the number of free blocks in the ramdisk

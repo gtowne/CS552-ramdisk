@@ -33,12 +33,12 @@ This implements the bitmap part of the assignment
 #include <asm/semaphore.h>
 #endif
 
-typedef struct Bitmap //Bitmap struct
+struct Bitmap //Bitmap struct
 {
   int size;
   int num_empty;  
   unsigned char array[BITMAP_NUM_BYTES];
-}Bitmap;
+};
 
 int bitmap_initialize           (struct Bitmap* bitmap);                            //Initializes all bits to 0
 int bitmap_get_one_block        (struct Bitmap* bitmap);                            //finds and marks one block

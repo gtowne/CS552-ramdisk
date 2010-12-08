@@ -229,6 +229,7 @@ int fdtable_a_createtable(int pid, FdtableArray *fdtablea)
 int fdtable_a_createentry(int pid, int inodenum, struct FdtableArray *fdtablea)
 {
     int ii;
+    int retval;
 
     // Try to find the table
     for (ii = 0; ii < fdtablea->a_size; ii++)
@@ -240,7 +241,7 @@ int fdtable_a_createentry(int pid, int inodenum, struct FdtableArray *fdtablea)
     }
 
     // If you couldnt' fint an existing table, then create a new one
-    int retval = fdtable_a_createtable(pid, fdtablea);
+    retval = fdtable_a_createtable(pid, fdtablea);
 
     if (retval < 0) return -1;
 
