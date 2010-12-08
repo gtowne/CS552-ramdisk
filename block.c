@@ -124,7 +124,7 @@ struct Block* block_at(struct Block *storage_block, int index) {
 	{
 	  return NULL;
 	}
-	if(index < 0 || index > DIRECTORY_ENTRIES_PER_BLOCK)
+	if(index < 0 || index > BLOCK_PTRS_PER_STORAGE_BLOCK)
 	{
 	  return NULL;
 	}
@@ -139,7 +139,7 @@ int set_indirect_storage_block(struct Block *storage_block, int index,
 	{
 	  return -1;
 	}
-	if(index < 0 || index > DIRECTORY_ENTRIES_PER_BLOCK)
+	if(index < 0 || index > BLOCK_PTRS_PER_STORAGE_BLOCK)
 	{
 	  return -1;
 	}

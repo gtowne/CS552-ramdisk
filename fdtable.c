@@ -49,7 +49,7 @@ int fdtable_createentry(int inodenum, struct Fdtable *fdtable)
      
     for (ii = 0; ii < fdtable->t_size; ii++)
     {
-        if (!fdtable->table[ii].being_used)
+        if (fdtable->table[ii].being_used == 0)
         {
             fdtable->table[ii].being_used = 1;
             fdtable->table[ii].inode_num  = inodenum;
@@ -59,7 +59,7 @@ int fdtable_createentry(int inodenum, struct Fdtable *fdtable)
     }
 
     #ifdef DEBUG
-    printf("Fdtable:: createentry: table for process %d is full\n", fdtable->pid);
+    PRINT("Fdtable:: createentry: table for process %d is full\n", fdtable->pid);
     #endif
     
     return -1;
@@ -104,6 +104,10 @@ int fdtable_removeatfd(int fd, struct Fdtable *fdtable)
     {
         if (fdtable->table[ii].fd == fd)
         {
+	    if(fdtable->table[ii].being_used != 1)
+	    {
+	      break;
+	    }
             fdtable->table[ii].being_used = 0;
             fdtable->table[ii].inode_num  = -1;
             fdtable->table[ii].offset = -1;
@@ -181,12 +185,12 @@ int _fdtable_print(struct Fdtable *fdtable)
 {
     int ii;
     
-    printf ("%*s    |%*s    |%*s    |%*s     \n",5, "used", 5, "fd", 5, "inode", 5, "offset");
-    printf ("---------------------------------------\n");
+    PRINT ("%*s    |%*s    |%*s    |%*s     \n",5, "used", 5, "fd", 5, "inode", 5, "offset");
+    PRINT ("---------------------------------------\n");
 
     for (ii = 0; ii < fdtable->t_size; ii++)
     {
-        printf ("%*d    |%*d    |%*d    |%*d     \n", 5, fdtable->table[ii].being_used, 5, fdtable->table[ii].fd, 5, fdtable->table[ii].inode_num, 5, fdtable->table[ii].offset);
+        PRINT ("%*d    |%*d    |%*d    |%*d     \n", 5, fdtable->table[ii].being_used, 5, fdtable->table[ii].fd, 5, fdtable->table[ii].inode_num, 5, fdtable->table[ii].offset);
     }
     
     return 0;
@@ -363,9 +367,9 @@ int _fdtable_a_print(struct FdtableArray *fdtablea)
 
     for (ii = 0; ii < fdtablea->a_size; ii++)
     {
-        printf("Table For Process: %d\n", fdtablea->array[ii].pid);
+        PRINT("Table For Process: %d\n", fdtablea->array[ii].pid);
         _fdtable_print((Fdtable*)&(fdtablea->array[ii]));
-        printf("\n");
+        PRINT("\n");
     }
     return 0;
 }

@@ -39,7 +39,7 @@ void r_inode_init(struct IndexNode* iNode)
   }
   for(i=0; i<IndexNodeDoublePointers; i++)
   {
-    iNode->doubleIndirectPointer[i] = NULL;
+    iNode->doublePointer[i] = NULL;
   }
 }
 
@@ -57,6 +57,12 @@ struct Block* inode_get_block_for_byte_index(struct IndexNode* iNode,
   }
 
   int blockIdx = address / BLOCK_BYTES;
+  if(blockIdx == 24)
+  {
+    int q=0;
+    blockIdx = 24;
+  }
+
   if(blockIdx < IndexNodeDirectPointers)
   {
     return iNode->directPointer[blockIdx];
@@ -65,18 +71,41 @@ struct Block* inode_get_block_for_byte_index(struct IndexNode* iNode,
   //now, onto the single indirect pointers
   blockIdx -= IndexNodeDirectPointers;
   
-  if(blockIdx < DIRECTORY_ENTRIES_PER_BLOCK * IndexNodeIndirectPointers)
+  if(blockIdx < BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers)
   {
-    int indirectIdx = blockIdx / DIRECTORY_ENTRIES_PER_BLOCK;
-    blockIdx = blockIdx % DIRECTORY_ENTRIES_PER_BLOCK;
+    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
     //does the null check inside the function
     struct Block* block = block_at(iNode->indirectPointer[indirectIdx], 
 				   blockIdx);
     return block;
   }
 
-  //@TODO: double Indirect pointers
-
+  //double Indirect pointers
+  int entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
+  blockIdx -= BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers;
+  int numDoublePointers = entries_squared * IndexNodeDoublePointers;
+  if(blockIdx < numDoublePointers)
+  {
+    int doubleIdx = blockIdx / (entries_squared);
+    blockIdx -= doubleIdx * entries_squared;
+    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
+    
+    struct Block* doubleIndirect=iNode->doublePointer[doubleIdx];
+    if(doubleIndirect == NULL)
+    {
+      return NULL;
+    }
+    struct Block* indirect=block_at(doubleIndirect, indirectIdx);
+    if(indirect == NULL)
+    {
+      return NULL;
+    }
+    struct Block* block = block_at(indirect, blockIdx);
+    return block;
+  }  
+  
   return NULL;
 }
 
@@ -97,6 +126,7 @@ struct Block* inode_get_last_block(struct IndexNode* iNode, int* oBlockOffset)
 
 struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
 {
+  int retval;
   struct Block* block = _ramdisk_allocate_block(iRamDisk);
   if(block == NULL)
   {
@@ -106,6 +136,110 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   //find the next place to add a block.
   int i;
 
+  //let's assume that we only add blocks at the end of the file.
+  //and let's assume that iNode->size is just after the last block
+  //currently in the file
+
+  //direct pointers
+  int blockIdx = iNode->size / BLOCK_BYTES;
+  if(blockIdx < IndexNodeDirectPointers)
+  {
+      iNode->directPointer[blockIdx] = block;
+      return block;
+  }
+
+  //now, onto the single indirect pointers
+  blockIdx -= IndexNodeDirectPointers;
+  
+  if(blockIdx < BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers)
+  {
+    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
+
+    if(iNode->indirectPointer[indirectIdx] == NULL)
+    {
+      if(blockIdx != 0)
+      {
+	PRINT("***ERROR indirect pointer is NULL, but blockIdx > 0\n");
+      }
+      
+      iNode->indirectPointer[indirectIdx] = block;
+      block = _ramdisk_allocate_block(iRamDisk);
+      if(block == NULL)
+      {
+	return NULL;
+      }  
+    }
+  
+    retval = add_block_to_indirect_storage(
+      iNode->indirectPointer[indirectIdx],
+      block);
+    if(retval != blockIdx)
+    //if(retval < 0 || retval >= BLOCK_PTRS_PER_STORAGE_BLOCK)
+    {
+      //@TODO deallocate block
+      PRINT("***ERROR placing block in inode_add_block\n");
+      return NULL;
+    }
+    return block;
+  }
+
+  //double indirect pointers
+  int entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
+  blockIdx -= BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers;
+  int numDoublePointers = entries_squared * IndexNodeDoublePointers;
+  if(blockIdx < numDoublePointers)
+  {
+    int doubleIdx = blockIdx / (entries_squared);
+    blockIdx -= doubleIdx * entries_squared;
+    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
+
+    //need to allocate a block for the double pointer
+    if(iNode->doublePointer[doubleIdx] == NULL)
+    {
+      if(indirectIdx != 0 || blockIdx != 0)
+      {
+	//ERROR
+      }
+      iNode->doublePointer[doubleIdx] = block;
+      block = _ramdisk_allocate_block(iRamDisk);
+      if(block == NULL)
+      {
+	return NULL;
+      }  
+    }
+    
+    struct Block* indirect = block_at(iNode->doublePointer[doubleIdx],
+				      indirectIdx);
+    //need to allocate a block for the indirect pointer
+    if(indirect == NULL)
+    {
+      retval = add_block_to_indirect_storage(iNode->doublePointer[doubleIdx],
+					     block);     
+      indirect = block_at(iNode->doublePointer[doubleIdx],
+			  indirectIdx);
+      if(retval != indirectIdx || indirect == NULL)
+      {
+	//ERROR
+      }
+      block = _ramdisk_allocate_block(iRamDisk);
+      if(block == NULL)
+      {
+	return NULL;
+      }  
+    }
+    
+    //add the block to the table of indirect pointers
+    retval = add_block_to_indirect_storage(indirect, block);
+    if(retval != blockIdx)
+    {
+      //ERROR
+    }
+    return block;
+  }
+
+/*
   // if it's in the direct pointers, you are done
   for(i=0; i<IndexNodeDirectPointers; i++)
   {
@@ -117,7 +251,7 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   }
 
   //now, on to the single indirect pointers
-  printf("Indirect pointers\n");
+  PRINT("Indirect pointers\n");
   //first, check to see if we need to add a table
   for(i=0; i<IndexNodeIndirectPointers; i++)
   {
@@ -137,7 +271,7 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
       return block;
     }
   }
-
+*/
   return NULL;
 
 /*
@@ -192,7 +326,7 @@ int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk,
 
   //find the current last block
   int dummy;
-  struct Block* currentLastBlock = inode_get_last_block(iNode, &dummy);
+  struct Block* currentLastBlock = inode_get_block_for_byte_index(iNode, iNode->size-1, &dummy);
   struct Block* hypothetical = 
     inode_get_block_for_byte_index(iNode, iNode->size-reduce-1, &dummy);
 
@@ -209,7 +343,9 @@ int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk,
 
 int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
 {
-  int blockIdx = iNode->size / BLOCK_BYTES;
+
+  //is this minus one the right thing to do?
+  int blockIdx = (iNode->size -1) / BLOCK_BYTES;
   if(blockIdx < IndexNodeDirectPointers)
   {
     if(iNode->directPointer[blockIdx] != NULL)
@@ -221,10 +357,11 @@ int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   }
 
   //now, on to single indirect pointers
-  if(blockIdx < DIRECTORY_ENTRIES_PER_BLOCK * IndexNodeIndirectPointers)
+  blockIdx -= IndexNodeDirectPointers;
+  if(blockIdx < BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers)
   { 
-    int indirectIdx = blockIdx / DIRECTORY_ENTRIES_PER_BLOCK;
-    blockIdx = blockIdx % DIRECTORY_ENTRIES_PER_BLOCK;
+    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
     //does the null check inside the function
     struct Block* doomed = block_at(iNode->indirectPointer[indirectIdx], 
 				    blockIdx);
@@ -234,16 +371,55 @@ int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
       set_indirect_storage_block(iNode->indirectPointer[indirectIdx],
 				 blockIdx, NULL);
     }
-    if(blockIdx = 0) //this was the first block in the table
+    if(blockIdx == 0) //this was the first block in the table
     {
       _ramdisk_deallocate_block(iRamDisk, iNode->indirectPointer[indirectIdx]);
       iNode->indirectPointer[indirectIdx]=NULL;
     }
+    return 1;
   }
   
   
-  
   //@TODO: Double Indirect pointers
+  int entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
+  blockIdx -= BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers;
+  int numDoublePointers = entries_squared * IndexNodeDoublePointers;
+  if(blockIdx < numDoublePointers)
+  {
+    int doubleIdx = blockIdx / (entries_squared);
+    blockIdx -= doubleIdx * entries_squared;
+    int indirectIdx = blockIdx / BLOCK_PTRS_PER_STORAGE_BLOCK;
+    blockIdx = blockIdx % BLOCK_PTRS_PER_STORAGE_BLOCK;
+    
+    struct Block* doubleIndirect=iNode->doublePointer[doubleIdx];
+    if(doubleIndirect == NULL)
+    {
+      return -1;
+    }
+    struct Block* indirect=block_at(doubleIndirect, indirectIdx);
+    if(indirect == NULL)
+    {
+      return -1;
+    }
+    struct Block* block = block_at(indirect, blockIdx);
+    _ramdisk_deallocate_block(iRamDisk, block);
+    set_indirect_storage_block(indirect, blockIdx, NULL);
+    
+    if(blockIdx == 0)
+    {
+      _ramdisk_deallocate_block(iRamDisk, indirect);
+      set_indirect_storage_block(doubleIndirect, indirectIdx, NULL);      
+    }
+
+    if(indirectIdx == 0)
+    {
+      _ramdisk_deallocate_block(iRamDisk, doubleIndirect);
+      iNode->doublePointer[doubleIdx]=NULL;
+    }
+    
+    return 1;
+  }  
+
   return -1;
 }
 
@@ -275,6 +451,7 @@ int inode_release(struct IndexNode* iNode,
     }
   }
 
+  //single indirect pointers
   for(i=0; i<IndexNodeIndirectPointers; i++)
   {
     if(iNode->indirectPointer[i] == NULL)
@@ -282,19 +459,51 @@ int inode_release(struct IndexNode* iNode,
       return 1;
     }
     int j;
-    for(j=0; j<DIRECTORY_ENTRIES_PER_BLOCK; j++)
+    for(j=0; j<BLOCK_PTRS_PER_STORAGE_BLOCK; j++)
     {
       struct Block* block = block_at(iNode->indirectPointer[i], j);
-      if(block != NULL)
+      if(block == NULL)
       {
-	_ramdisk_deallocate_block(iRamDisk, block);
-	set_indirect_storage_block(iNode->indirectPointer[i], j, NULL);
+	break;
       }
+      _ramdisk_deallocate_block(iRamDisk, block);
+      set_indirect_storage_block(iNode->indirectPointer[i], j, NULL);
     }
     _ramdisk_deallocate_block(iRamDisk, iNode->indirectPointer[i]);
   }
 
-
+  //double indirect pointers
+  for(i=0; i<IndexNodeDoublePointers; i++)
+  {
+    if(iNode->doublePointer[i] == NULL)
+    {
+      return 1;
+    }
+    int j,k;
+    struct Block* doubleIndirect=iNode->doublePointer[i];
+    for(j=0; j<BLOCK_PTRS_PER_STORAGE_BLOCK; j++)
+    {
+      struct Block* indirect=block_at(doubleIndirect, j);     
+      if(indirect == NULL)
+      {
+	break;
+      }
+      for(k=0; k<BLOCK_PTRS_PER_STORAGE_BLOCK; k++)
+      {
+	struct Block* block = block_at(indirect, k);
+	if(block == NULL)
+	{
+	  break;
+	}
+	_ramdisk_deallocate_block(iRamDisk, block);
+	set_indirect_storage_block(indirect, k, NULL);
+      }
+      _ramdisk_deallocate_block(iRamDisk, indirect);
+      set_indirect_storage_block(doubleIndirect, j, NULL);      
+    }
+    _ramdisk_deallocate_block(iRamDisk, doubleIndirect);
+    iNode->doublePointer[i]=NULL;
+  }
 
   return 1;
 }

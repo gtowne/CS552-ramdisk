@@ -44,7 +44,7 @@ struct IndexNode
   int size;
   struct Block* directPointer[IndexNodeDirectPointers];
   struct Block* indirectPointer[IndexNodeIndirectPointers];
-  struct Block* doubleIndirectPointer[IndexNodeDoublePointers];
+  struct Block* doublePointer[IndexNodeDoublePointers];
   char freeBytes[16]; //padding to make the struct the right size
 };
 
