@@ -20,6 +20,18 @@ Definition for block data structure for regular or directory files
 #include "defines.h"
 #include "string_utils.h"
 
+#ifndef USE_PTHREADS
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/errno.h> /* error codes */
+#include <linux/proc_fs.h>
+#include <linux/tty.h>
+#include <linux/sched.h>
+#include <linux/wait.h>
+#include <asm/uaccess.h>
+#include <asm/semaphore.h>
+#endif
+
 //const int DIRECTORY_ENTRIES_PER_BLOCK=BLOCK_BYTES/sizeof(DirectoryEntry);
 #define DIRECTORY_ENTRIES_PER_BLOCK 16
 

@@ -26,7 +26,22 @@ This implements the bitmap part of the assignment
 
 #include "fdtable.h"
 
+#ifndef USE_PTHREADS
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/errno.h> /* error codes */
+#include <linux/proc_fs.h>
+#include <linux/tty.h>
+#include <linux/sched.h>
+#include <linux/wait.h>
+#include <asm/uaccess.h>
+#include <asm/semaphore.h>
+#endif
+
 #define MAX_FILENAME_LENGTH 512
+
+extern struct FdtableArray fdtablea;
+extern struct Ramdisk* RAMDISK;
 
 struct Ramdisk //Ramdisk struct
 {
@@ -54,8 +69,21 @@ int rd_readdir  (int fd, char *address);
 
 //int _ramdisk_parsepath  (char *pathname); //Parses the pathname to an inode index (parent inode of the requested file)
 
+int block_fill(struct Block* block);
 
 struct Block* _ramdisk_allocate_block(struct Ramdisk* iRamDisk);
 int _ramdisk_deallocate_block(struct Ramdisk* iRamDisk, struct Block* iBlock);
 
+
+int _ramdisk_allocate_inode(struct Ramdisk* ramdisk, enum NodeType type);
+int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index);
+
+int _ramdisk_walk_path(struct Ramdisk* ramdisk, char* name);
+int _ramdisk_get_parent(struct Ramdisk* ramdisk, char* name, char token[14]);
+
+int _ramdisk_find_directory_entry(struct Ramdisk* ramdisk, 
+				  struct IndexNode* parent, char* name,
+				  struct Block** oBlock, int* offset);
+int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* parent,
+				 char* name, enum NodeType type);
 #endif

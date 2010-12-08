@@ -23,6 +23,18 @@ This implements the INode part of the assignment
 #include "defines.h"
 #include "block.h"
 
+#ifndef USE_PTHREADS
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/errno.h> /* error codes */
+#include <linux/proc_fs.h>
+#include <linux/tty.h>
+#include <linux/sched.h>
+#include <linux/wait.h>
+#include <asm/uaccess.h>
+#include <asm/semaphore.h>
+#endif
+
 struct Ramdisk;
 
 

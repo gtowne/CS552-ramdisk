@@ -32,15 +32,19 @@ ramdisk_kernel_lib.h
 // UNCOMMENT FOLLOWING LINE WHEN RAMDISK SUCCESSFULLY COMPILES
 //
 //
-// #include "ramdisk.h"
+#include "ramdisk.h"
 
 MODULE_LICENSE("GPL");
+
+// Had to move this here, would not compile otherwise
+struct semaphore mutex;
 
 static struct file_operations pseudo_dev_proc_operations;
 
 static struct proc_dir_entry *proc_entry;
 
 int handle_creat_call(unsigned long ioctl_arg) {
+	
 	struct pathname_args_t creat_args;
 
 	if (0 != copy_from_user(&creat_args, (struct pathname_args_t *)ioctl_arg, 
@@ -62,7 +66,7 @@ int handle_creat_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	// creat_args.ret_val = rd_creat(buff);
+	creat_args.ret_val = rd_creat(buff);
 
 	if (0 != copy_to_user((void*) ioctl_arg, &creat_args, sizeof(struct pathname_args_t))) {
 		printk("Error copyting creat return value to user level\n");
@@ -73,6 +77,7 @@ int handle_creat_call(unsigned long ioctl_arg) {
 }
 
 int handle_mkdir_call(unsigned long ioctl_arg) {
+	
 	struct pathname_args_t mkdir_args;
 
 	if (0 != copy_from_user(&mkdir_args, (struct pathname_args_t *)ioctl_arg, 
@@ -94,7 +99,7 @@ int handle_mkdir_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	// mkdir_args.ret_val = rd_mkdir(buff);	
+	mkdir_args.ret_val = rd_mkdir(buff);	
 
 	if (0!= copy_to_user((void*) ioctl_arg, (void*) &mkdir_args, sizeof(struct pathname_args_t))) {
 		printk("Error copyting mkdir return value to user level\n");
@@ -105,6 +110,7 @@ int handle_mkdir_call(unsigned long ioctl_arg) {
 }
 
 int handle_open_call(unsigned long ioctl_arg) {
+	
 	struct pathname_args_t open_args;
 
 	if (0 != copy_from_user(&open_args, (struct pathname_args_t *)ioctl_arg, 
@@ -126,7 +132,7 @@ int handle_open_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	// mkdir_args.ret_val = rd_open(buff);
+	mkdir_args.ret_val = rd_open(buff);
 
 	if (0 != copy_to_user((void*) ioctl_arg, (void*) &open_args, sizeof(struct pathname_args_t))) {
 		printk("Error copying open return value to user level\n");
@@ -137,6 +143,7 @@ int handle_open_call(unsigned long ioctl_arg) {
 }
 
 int handle_close_call(unsigned long ioctl_arg) {
+	
 	struct close_args_t close_args;
 
 	if (0 != copy_from_user(&close_args, (struct close_args_t *)ioctl_arg, 
@@ -164,6 +171,7 @@ int handle_close_call(unsigned long ioctl_arg) {
 }
 
 int handle_read_call(unsigned long ioctl_arg) {
+	
 	struct read_write_args_t read_args;
 
 	if (0 != copy_from_user(&read_args, (struct read_write_args_t *)ioctl_arg, 
@@ -182,7 +190,7 @@ int handle_read_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	// read_args.ret_val = rd_read(fd, address, num_bytes);
+	read_args.ret_val = rd_read(fd, address, num_bytes);
 
 	if (0 != copy_to_user((void*) ioctl_arg, (void*) &read_args, sizeof(struct read_write_args_t))) {
 		printk("Error copyting read return value to user level\n");
@@ -193,6 +201,7 @@ int handle_read_call(unsigned long ioctl_arg) {
 }
 
 int handle_write_call(unsigned long ioctl_arg) {
+	
 	struct read_write_args_t write_args;
 
 	if (0 != copy_from_user(&write_args, (struct read_write_args_t *)ioctl_arg, 
@@ -211,7 +220,7 @@ int handle_write_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	// write_args.ret_val = rd_write(fd, address, num_bytes);
+	write_args.ret_val = rd_write(fd, address, num_bytes);
 
 	if (0 != copy_to_user((void*) ioctl_arg, (void*) &write_args, sizeof(struct read_write_args_t))) {
 		printk("Error copyting write return value to user level\n");
@@ -222,6 +231,7 @@ int handle_write_call(unsigned long ioctl_arg) {
 }
 
 int handle_seek_call(unsigned long ioctl_arg) {
+	
 	struct seek_args_t seek_args;
 
 	if (0 != copy_from_user(&seek_args, (struct seek_args_t *)ioctl_arg, 
@@ -239,7 +249,7 @@ int handle_seek_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	// seek_args.ret_val = rd_seek(fd, offset);
+	seek_args.ret_val = rd_seek(fd, offset);
 
 	if (0 != copy_to_user((void*) ioctl_arg, (void*) &seek_args, sizeof(struct seek_args_t))) {
 		printk("Error copying seek return value to user level\n");
@@ -250,6 +260,7 @@ int handle_seek_call(unsigned long ioctl_arg) {
 }
 
 int handle_readdir_call(unsigned long ioctl_arg) {
+	
 	struct read_write_args_t readdir_args;
 
 	if (0 != copy_from_user(&readdir_args, (struct read_write_args_t *)ioctl_arg, 
@@ -267,7 +278,7 @@ int handle_readdir_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	// readdir_args.ret_val = rd_readdir(fd, address);
+	readdir_args.ret_val = rd_readdir(fd, address);
 
 	if (0 != copy_to_user((void*) ioctl_arg, (void*) &readdir_args, sizeof(struct read_write_args_t))) {
 		printk("Error copying readdir return value to user level\n");
@@ -278,6 +289,7 @@ int handle_readdir_call(unsigned long ioctl_arg) {
 }
 
 int handle_unlink_call(unsigned long ioctl_arg) {
+	
 	struct pathname_args_t unlink_args;
 
 	if (0 != copy_from_user(&unlink_args, (struct pathname_args_t *)ioctl_arg, 
@@ -299,7 +311,7 @@ int handle_unlink_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	// unlink_args.ret_val = rd_unlink(buff);
+	unlink_args.ret_val = rd_unlink(buff);
 
 	if (0 != copy_to_user((void*) ioctl_arg, (void*) &unlink_args, sizeof(struct pathname_args_t))) {
 		printk("Error copyting unlink return value to user level\n");
@@ -316,57 +328,57 @@ static int pseudo_device_ioctl(struct inode *inode, struct file *file,
   switch (cmd){
 
   case RD_CREAT:
-    
+    down_interruptible(&mutex);
 	handle_creat_call(arg);
-	
+	up(&mutex);
     break;
     
   case RD_MKDIR:
-
+	down_interruptible(&mutex);
 	handle_mkdir_call(arg);
-  
+  	up(&mutex);
   	break;
   	
   case RD_OPEN:
-
+	down_interruptible(&mutex);
 	handle_open_call(arg);
-  
+  	up(&mutex);
   	break;
   	
   case RD_CLOSE:
-
+	down_interruptible(&mutex);
 	handle_close_call(arg);
-  
+  	up(&mutex);
   	break;
   	
   case RD_READ:
-
+	down_interruptible(&mutex);
 	handle_read_call(arg);
-  
+  	up(&mutex);
   	break;
   	
   case RD_WRITE:
-
+	down_interruptible(&mutex);
 	handle_write_call(arg);
-  
+  	up(&mutex);
   	break;
   	
   case RD_SEEK:
-
+	down_interruptible(&mutex);
 	handle_seek_call(arg);
-  
+  	up(&mutex);
   	break;
   	
   case RD_READDIR:
-
+	down_interruptible(&mutex);
 	handle_readdir_call(arg);
-  
+  	up(&mutex);
   	break;
 
   case RD_UNLINK:
-
+	down_interruptible(&mutex);
 	handle_unlink_call(arg);
-
+	up(&mutex);
 	break;
   
   default:
@@ -392,6 +404,8 @@ static int __init initialization_routine(void) {
 	
 	proc_entry->owner = THIS_MODULE;
 	proc_entry->proc_fops = &pseudo_dev_proc_operations;
+	
+	sema_init(&mutex, 1);
 	
 	return 0;
 }

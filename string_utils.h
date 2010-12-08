@@ -20,6 +20,18 @@
 #define NULL 0x0
 #endif
 
+#ifndef USE_PTHREADS
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/errno.h> /* error codes */
+#include <linux/proc_fs.h>
+#include <linux/tty.h>
+#include <linux/sched.h>
+#include <linux/wait.h>
+#include <asm/uaccess.h>
+#include <asm/semaphore.h>
+#endif
+
 // copy string from src to dst buffer, max_chars is
 // maximum number of characters to copy INCLUDING null
 // terminator

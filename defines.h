@@ -29,7 +29,7 @@
 #define TABLE_SIZE 64
 #define NUM_TABLES 20
 
-#define USE_PTHREADS
+//#define USE_PTHREADS
 
 #ifdef USE_PTHREADS
 #define PRINT printf

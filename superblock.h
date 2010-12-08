@@ -23,6 +23,16 @@ This implements the superblock part of the assignment
 
 #ifdef USE_PTHREADS
 #include <pthread.h>
+#else
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/errno.h> /* error codes */
+#include <linux/proc_fs.h>
+#include <linux/tty.h>
+#include <linux/sched.h>
+#include <linux/wait.h>
+#include <asm/uaccess.h>
+#include <asm/semaphore.h>
 #endif
 
 typedef struct Superblock //Bitmap struct
@@ -33,8 +43,8 @@ typedef struct Superblock //Bitmap struct
     pthread_mutex_t mutex;  
     unsigned char filler[BLOCK_BYTES - 2*sizeof(short) - sizeof(pthread_mutex_t)];
     #else
-    struct semaphore mutex;
-    unsigned char filler[BLOCK_BYTES - 2*sizeof(short) - sizeof(struct semaphore)];
+    //struct semaphore mutex;
+    unsigned char filler[BLOCK_BYTES - 2*sizeof(short)];
     #endif
 }Superblock;
 

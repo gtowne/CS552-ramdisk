@@ -28,7 +28,7 @@ int superblock_initialize(struct Superblock *superblock)
     #ifdef USE_PTHREADS
     pthread_mutex_init(&superblock->mutex, NULL);
     #else
-    sema_init(&superblock->mutex, 1);
+    //sema_init(&superblock->mutex, 1);
     #endif
     return 0;
 }
@@ -61,8 +61,8 @@ int superblock_lock(struct Superblock *superblock)
   //PRINT("LOCK\n");
     return pthread_mutex_lock(&superblock->mutex);
     #else
-    down_interruptible(&superblock->mutex);
-    return 0;
+    //down_interruptible(&superblock->mutex);
+    return 1;
     #endif
     return -1;
 }
@@ -73,8 +73,8 @@ int superblock_unlock(struct Superblock *superblock)
   //PRINT("UNLOCK\n");
     return pthread_mutex_unlock(&superblock->mutex);
     #else
-    up(&superblock->mutex);
-    return 0;
+    //up(&superblock->mutex);
+    return 1;
     #endif
     return -1;
 }

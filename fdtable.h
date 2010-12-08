@@ -39,26 +39,38 @@ The FdtableArray just contains a few of these Fdtable structs
 
 #include "defines.h"
 
-typedef struct FdtableEntry
+#ifndef USE_PTHREADS
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/errno.h> /* error codes */
+#include <linux/proc_fs.h>
+#include <linux/tty.h>
+#include <linux/sched.h>
+#include <linux/wait.h>
+#include <asm/uaccess.h>
+#include <asm/semaphore.h>
+#endif
+
+struct FdtableEntry
 {
     int     being_used;
     short   fd;
     short   inode_num;
     int     offset;
-}FdtableEntry;
+};
 
-typedef struct Fdtable
+struct Fdtable
 {
     int     pid;
     int     t_size;
     struct  FdtableEntry table[TABLE_SIZE];
-}Fdtable;
+};
 
-typedef struct FdtableArray
+struct FdtableArray
 {
     int     a_size;
     struct  Fdtable array[NUM_TABLES];
-}FdtableArray;
+};
 
 /*METHODS FOR A SINGLE FD TABLE*/
 
@@ -84,7 +96,7 @@ int _fdtable_print              (struct Fdtable *fdtable);                      
 // or if we decide to try a multithreaded implementation
 
 int fdtable_a_initialize        (struct FdtableArray *fdtablea);
-int fdtable_a_createtable       (int pid, FdtableArray *fdtablea);  //Creates a new Fdtable inside the array
+int fdtable_a_createtable       (int pid, struct FdtableArray *fdtablea);  //Creates a new Fdtable inside the array
 int fdtable_a_createentry       (int pid, int inodenum, struct FdtableArray *fdtablea);
 int fdtable_a_seekwithfd        (int pid, int fd, int offset, struct FdtableArray *fdtablea);
 int fdtable_a_seekwithinodenum  (int pid, int inodenum, int offset, struct FdtableArray *fdtablea);
