@@ -5,10 +5,10 @@ using namespace std;
 
 int main()
 {
-  struct IndexNode node;
-  cout<<sizeof(IndexNode)<<endl;
+    struct IndexNode node;
+    cout<<sizeof(IndexNode)<<endl;
 
-  inode_init(&node);
-  cout<<"done"<<endl;
+    inode_init(&node);
+    cout<<"done"<<endl;
 }
 

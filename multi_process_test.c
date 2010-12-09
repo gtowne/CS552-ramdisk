@@ -12,55 +12,55 @@ int ramdisk_muscle_flexer(int num_execs);
 
 int ls(char* path)
 {
-  printf("This is LS in %u\n", getpid());
+    printf("This is LS in %u\n", getpid());
 
-  char buffer[16];
-  int fd = rd_open(path);
-  if(fd < 0)
-  {
-    return -1;
-  }
+    char buffer[16];
+    int fd = rd_open(path);
+    if(fd < 0)
+    {
+        return -1;
+    }
 
-  while(rd_readdir(fd, buffer) > 0)
-  {
-    printf("%s/%s in %u\n", path, buffer, getpid());
-  }
-  fd = rd_close(fd);
-  return 0;
+    while(rd_readdir(fd, buffer) > 0)
+    {
+        printf("%s/%s in %u\n", path, buffer, getpid());
+    }
+    fd = rd_close(fd);
+    return 0;
 }
 
 int more(char* path, int seek)
 {
-  printf("This is MORE %s\n", path);
-  char buffer[1000];
-  buffer[1000]='\0';
-  int fd = rd_open(path);
-  rd_seek(fd, seek);
-  if(fd < 0)
-  {
-    return -1;
-  }
+    printf("This is MORE %s\n", path);
+    char buffer[1000];
+    buffer[1000]='\0';
+    int fd = rd_open(path);
+    rd_seek(fd, seek);
+    if(fd < 0)
+    {
+        return -1;
+    }
 
-  int totalBytes=0;
-  int retval;
-  do
-  {
-    retval = rd_read(fd, buffer, 999);
-    totalBytes += retval;
-    buffer[retval]='\0';
-    printf("%s", buffer);
-  }
-  while(retval > 0);
+    int totalBytes=0;
+    int retval;
+    do
+    {
+        retval = rd_read(fd, buffer, 999);
+        totalBytes += retval;
+        buffer[retval]='\0';
+        printf("%s", buffer);
+    }
+    while(retval > 0);
 
-  rd_close(fd);
-  return totalBytes;
+    rd_close(fd);
+    return totalBytes;
 }
 
 int writeLogo(int fd, int repeats, int writeNull)
 {
-  char* null="\0";
-  char * logo=
-" _____                     ______            _              \n\
+    char* null="\0";
+    char * logo=
+        " _____                     ______            _              \n\
 |_   _|                    | ___ \\          | |             \n\
   | | ___  __ _ _ __ ___   | |_/ /__ _ _ __ | |_  ___  _ __ \n\
   | |/ _ \\/ _` | '_ ` _ \\  |    // _` | '_ \\| __|/ _ \\| '__|\n\
@@ -70,39 +70,41 @@ int writeLogo(int fd, int repeats, int writeNull)
                                       |_|                   \n";
 
 
-  int len = strlen(logo);
-  int i, bytesWritten, retval;
-  int totalBytes = 0;
-  for(i=0; i<repeats; i++)
-  {
-    bytesWritten = rd_write(fd, logo, len);
-    if(bytesWritten != len)
+    int len = strlen(logo);
+    int i, bytesWritten, retval;
+    int totalBytes = 0;
+    for(i=0; i<repeats; i++)
     {
-      //printf("TEST ERROR (Logo): Did not write required number of bytes\n");
-      break;
+        bytesWritten = rd_write(fd, logo, len);
+        if(bytesWritten != len)
+        {
+            //printf("TEST ERROR (Logo): Did not write required number of bytes\n");
+            break;
+        }
+        totalBytes += bytesWritten;
     }
-    totalBytes += bytesWritten;
-  }
 
-  if(writeNull == 1)
-  {
-  bytesWritten = rd_write(fd, null, 1);
-  totalBytes += bytesWritten;
-  if(bytesWritten != 1)
-  {
-      //printf("TEST ERROR (Logo): Did not write required number of bytes\n");
-  }
-  }
-  return totalBytes;  
+    if(writeNull == 1)
+    {
+        bytesWritten = rd_write(fd, null, 1);
+        totalBytes += bytesWritten;
+        if(bytesWritten != 1)
+        {
+            //printf("TEST ERROR (Logo): Did not write required number of bytes\n");
+        }
+    }
+    return totalBytes;
 }
 
 
-int main(int argc, char** argv) {
-    if (argc != 3) {
-      printf("usage: ./multi_process_test [num_processes] [iterations]\n");
+int main(int argc, char** argv)
+{
+    if (argc != 3)
+    {
+        printf("usage: ./multi_process_test [num_processes] [iterations]\n");
 
-		return -1;
-	}
+        return -1;
+    }
 
     int numProcesses = atoi(argv[1]);
 
@@ -114,17 +116,21 @@ int main(int argc, char** argv) {
 
     pid_t parentPid = getpid();
     int i;
-    for (i = 0; i < numProcesses; i++) {
+    for (i = 0; i < numProcesses; i++)
+    {
         pid_t thisPid = fork();
-        if (thisPid == 0) {
+        if (thisPid == 0)
+        {
             ramdisk_muscle_flexer(num_execs);
-            break;            
+            break;
         }
     }
 
     int j;
-    if (getpid() == parentPid) {
-        for (j = 0; j < numProcesses; j++) {
+    if (getpid() == parentPid)
+    {
+        for (j = 0; j < numProcesses; j++)
+        {
             wait(&i);
         }
         int read = more("/thesharedfile", 0);
@@ -133,9 +139,10 @@ int main(int argc, char** argv) {
     }
 }
 
-int ramdisk_muscle_flexer(int num_execs) {
+int ramdisk_muscle_flexer(int num_execs)
+{
     printf("Entering process : %u\n", getpid());
-    
+
     printf("Process %u: wrote to shared file\n", getpid());
     int fdShared = rd_open("/thesharedfile");
     rd_seek(fdShared, -1);
@@ -143,7 +150,7 @@ int ramdisk_muscle_flexer(int num_execs) {
     rd_close(fdShared);
 
     char startDir[14];
-    
+
     sprintf(startDir, "/p%u", getpid()%1000);
     rd_mkdir(startDir);
 
@@ -158,7 +165,8 @@ int ramdisk_muscle_flexer(int num_execs) {
     sprintf(fileC, "%s/fileC", startDir);
 
     int j;
-    for (j = 0; j < num_execs; j++) {   
+    for (j = 0; j < num_execs; j++)
+    {
         rd_creat(fileA);
         rd_creat(fileB);
         rd_creat(fileC);
@@ -166,17 +174,20 @@ int ramdisk_muscle_flexer(int num_execs) {
         ls(startDir);
 
         int fdFileA = rd_open(fileA);
-        
+
         int bytesWritten = writeLogo(fdFileA, 2,1);
 
-        int bytesRead = more(fileA, 0);    
+        int bytesRead = more(fileA, 0);
 
-        if (bytesWritten == bytesRead) {
+        if (bytesWritten == bytesRead)
+        {
             printf("Process %u wrote and read %i bytes from fileA\n", getpid(), bytesRead);
-        } else {
+        }
+        else
+        {
             printf("ERROR: Process %u bytes written: %i not equal read %i\n", getpid(),bytesWritten,  bytesRead);
         }
-        
+
         rd_close(fdFileA);
         rd_unlink(fileA);
         rd_unlink(fileB);

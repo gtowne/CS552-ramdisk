@@ -25,7 +25,7 @@ int main()
     fdtable_seekwithfd(5, 20, &thetable);
     fdtable_seekwithinodenum(54, 77, &thetable);
     fdtable_removeatfd(7, &thetable);
-    fdtable_removeatinodenum(6, &thetable); 
+    fdtable_removeatinodenum(6, &thetable);
 
     printf("\nTABLE AFTER:\n");
     printf("fdtable_seekwithfd(5, 20, &thetable);\n");

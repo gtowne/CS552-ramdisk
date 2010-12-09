@@ -24,6 +24,6 @@ int main()
     printf("locked\n");
     superblock_unlock(&superblock);
     printf("unlocked\n");
-    
+
     return 0;
 }

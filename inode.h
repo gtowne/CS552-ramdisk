@@ -1,12 +1,12 @@
 /*
- _____                     ______            _              
-|_   _|                    | ___ \          | |             
-  | | ___  __ _ _ __ ___   | |_/ /__ _ _ __ | |_  ___  _ __ 
+ _____                     ______            _
+|_   _|                    | ___ \          | |
+  | | ___  __ _ _ __ ___   | |_/ /__ _ _ __ | |_  ___  _ __
   | |/ _ \/ _` | '_ ` _ \  |    // _` | '_ \| __|/ _ \| '__|
-  | |  __/ (_| | | | | | | | |\ \ (_| | |_) | |_| (_) | |   
-  \_/\___|\__,_|_| |_| |_| \_| \_\__,_| .__/ \__|\___/|_|   
-                                      | |                   
-                                      |_|                              
+  | |  __/ (_| | | | | | | | |\ \ (_| | |_) | |_| (_) | |
+  \_/\___|\__,_|_| |_| |_| \_| \_\__,_| .__/ \__|\___/|_|
+                                      | |
+                                      |_|
 Luis Carrasco, Diane Theriault, Gordon Towne
 Ramdisk - Project 3 - CS552
 
@@ -51,12 +51,12 @@ enum NodeType { RAMDISK_DIR, RAMDISK_FILE, RAMDISK_UNALLOCATED };
 
 struct IndexNode
 {
-  enum NodeType type; // @TODO: check that this is 4 bytes
-  int size;
-  struct Block* directPointer[IndexNodeDirectPointers];
-  struct Block* indirectPointer[IndexNodeIndirectPointers];
-  struct Block* doublePointer[IndexNodeDoublePointers];
-  char freeBytes[16]; //padding to make the struct the right size
+    enum NodeType type; // @TODO: check that this is 4 bytes
+    int size;
+    struct Block* directPointer[IndexNodeDirectPointers];
+    struct Block* indirectPointer[IndexNodeIndirectPointers];
+    struct Block* doublePointer[IndexNodeDoublePointers];
+    char freeBytes[16]; //padding to make the struct the right size
 };
 
 void r_inode_init(struct IndexNode* iNode);
@@ -68,8 +68,8 @@ void r_inode_init(struct IndexNode* iNode);
 @param[out] int oBlockOffset how many bytes into the block you should start
 @return     Block*           the block you want to use for that offset
 */
-struct Block* inode_get_block_for_byte_index(struct IndexNode* iNode, 
-                                      int address, int* oBlockOffset);
+struct Block* inode_get_block_for_byte_index(struct IndexNode* iNode,
+        int address, int* oBlockOffset);
 
 /**
 @param[in]  IndexNode iNode  the index node for the file
@@ -80,7 +80,7 @@ struct Block* inode_get_last_block(struct IndexNode* iNode, int* oBlockOffset);
 
 /**
 @param[in]  IndexNode iNode    the index node for the file
-@param[in]  Ramdisk iRamDisk   the Ramdisk structure itself, 
+@param[in]  Ramdisk iRamDisk   the Ramdisk structure itself,
                                (in case you need to allocate a new block
                                for an indirect node, etc.)
 */
@@ -90,8 +90,8 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
 /**
    reduce the iNode's size by "reduce" bytes. (deallocate blocks if necessary)
  */
-int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk, 
-		      int reduce);
+int inode_reduce_size(struct IndexNode* iNode, struct Ramdisk* iRamDisk,
+                      int reduce);
 
 /**
    remove the LAST block
@@ -100,10 +100,10 @@ int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk);
 
 /**
 @param[in]  IndexNode iNode    the index node for the file
-@param[in]  Ramdisk iRamDisk   the Ramdisk structure itself, 
+@param[in]  Ramdisk iRamDisk   the Ramdisk structure itself,
                                (to deallocate blocks)
 */
 int inode_release(struct IndexNode* iNode,
-		   struct Ramdisk* iRamDisk);
+                  struct Ramdisk* iRamDisk);
 
 #endif

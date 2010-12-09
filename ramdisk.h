@@ -1,12 +1,12 @@
 /*
- _____                     ______            _              
-|_   _|                    | ___ \          | |             
-  | | ___  __ _ _ __ ___   | |_/ /__ _ _ __ | |_  ___  _ __ 
+ _____                     ______            _
+|_   _|                    | ___ \          | |
+  | | ___  __ _ _ __ ___   | |_/ /__ _ _ __ | |_  ___  _ __
   | |/ _ \/ _` | '_ ` _ \  |    // _` | '_ \| __|/ _ \| '__|
-  | |  __/ (_| | | | | | | | |\ \ (_| | |_) | |_| (_) | |   
-  \_/\___|\__,_|_| |_| |_| \_| \_\__,_| .__/ \__|\___/|_|   
-                                      | |                   
-                                      |_|                              
+  | |  __/ (_| | | | | | | | |\ \ (_| | |_) | |_| (_) | |
+  \_/\___|\__,_|_| |_| |_| \_| \_\__,_| .__/ \__|\___/|_|
+                                      | |
+                                      |_|
 
 Luis Carrasco, Diane Theriault, Gordon Towne
 Ramdisk - Project 3 - CS552
@@ -84,9 +84,9 @@ int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index);
 int _ramdisk_walk_path(struct Ramdisk* ramdisk, char* name);
 int _ramdisk_get_parent(struct Ramdisk* ramdisk, char* name, char token[14]);
 
-int _ramdisk_find_directory_entry(struct Ramdisk* ramdisk, 
-				  struct IndexNode* parent, char* name,
-				  struct Block** oBlock, int* offset);
+int _ramdisk_find_directory_entry(struct Ramdisk* ramdisk,
+                                  struct IndexNode* parent, char* name,
+                                  struct Block** oBlock, int* offset);
 int _ramdisk_add_directory_entry(struct Ramdisk* ramdisk, struct IndexNode* parent,
-				 char* name, enum NodeType type);
+                                 char* name, enum NodeType type);
 #endif

@@ -1,12 +1,12 @@
 /*
- _____                     ______            _              
-|_   _|                    | ___ \          | |             
-  | | ___  __ _ _ __ ___   | |_/ /__ _ _ __ | |_  ___  _ __ 
+ _____                     ______            _
+|_   _|                    | ___ \          | |
+  | | ___  __ _ _ __ ___   | |_/ /__ _ _ __ | |_  ___  _ __
   | |/ _ \/ _` | '_ ` _ \  |    // _` | '_ \| __|/ _ \| '__|
-  | |  __/ (_| | | | | | | | |\ \ (_| | |_) | |_| (_) | |   
-  \_/\___|\__,_|_| |_| |_| \_| \_\__,_| .__/ \__|\___/|_|   
-                                      | |                   
-                                      |_|                              
+  | |  __/ (_| | | | | | | | |\ \ (_| | |_) | |_| (_) | |
+  \_/\___|\__,_|_| |_| |_| \_| \_\__,_| .__/ \__|\___/|_|
+                                      | |
+                                      |_|
 
 Luis Carrasco, Diane Theriault, Gordon Towne
 Ramdisk - Project 3 - CS552
@@ -39,13 +39,13 @@ struct Superblock //Bitmap struct
 {
     short free_blocks;
     short free_inodes;
-    #ifdef USE_PTHREADS
-    pthread_mutex_t mutex;  
+#ifdef USE_PTHREADS
+    pthread_mutex_t mutex;
     unsigned char filler[BLOCK_BYTES - 2*sizeof(short) - sizeof(pthread_mutex_t)];
-    #else
+#else
     //struct semaphore mutex;
     unsigned char filler[BLOCK_BYTES - 2*sizeof(short)];
-    #endif
+#endif
 };
 
 int superblock_initialize    (struct Superblock *superblock);            // Initializes superblock with the right values

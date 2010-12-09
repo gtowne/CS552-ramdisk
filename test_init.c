@@ -2,5 +2,5 @@
 
 int main()
 {
-  rd_init();
+    rd_init();
 }
