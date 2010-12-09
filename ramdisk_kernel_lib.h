@@ -55,6 +55,7 @@ struct seek_args_t {
 #define RD_SEEK _IOW(0, 12, struct seek_args_t)
 #define RD_READDIR _IOW(0, 13, struct read_write_args_t)
 #define RD_UNLINK _IOW(0, 14, struct pathname_args_t)
+#define RD_INIT _IOW(0, 15, struct pathname_args_t)
 
 #define PROC_MODULE_NAME "ramdisk_lib"
 

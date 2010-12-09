@@ -2,27 +2,39 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef USE_PTHREADS
 #include "ramdisk.h"
-
 struct Ramdisk* RAMDISK;
 struct FdtableArray fdtablea;
-
+#else
+#include "ramdisk_lib.h"
+#endif
+
 int writeCookieSong(int fd, int times);
 int writeLogo(int fd, int times);
 int writeRaptor(int fd, int times);
+int more(char* path, int seek);
+int testSize(char* path);
+int ls(char* path);
+
 
 int main()
 {
   int retval, fd;
-    RAMDISK = malloc(sizeof(struct Ramdisk));
 
+   #ifdef USE_PTHREADS
+   RAMDISK = malloc(sizeof(struct Ramdisk));
     _ramdisk_initialize(RAMDISK);
+   #else
+   rd_init();
+   #endif
 
     //create a directory that requires more than one block
     //(use all of the direct pointers)
     int i;
     int numdirectories=128;
     char name[100] = "/aaaa";
+
     for(i=0; i<numdirectories; i++)
     {
       sprintf(name, "/a%d", i);
@@ -37,8 +49,8 @@ int main()
       sprintf(name, "/a%d", i);
       rd_unlink(name);
     }
-    printf("unlinked all 128 directories\n");
-
+    printf("unlinked all 128 directories. The next LS should be empty.\n");
+    ls("/");
 
     //now, use some of the indirect pointers
     //(and max out the inodes)
@@ -47,19 +59,21 @@ int main()
     {
       sprintf(name, "/a%d", i);
       int q = rd_creat(name);
-      printf("%d %d %s\n", i, q, name); 
+      if(q < 0)
+      {
+         printf("TEST ERROR: Failed to create file %s\n", name);
+      }
     }
     //test readdir
     printf("Created enough directories to use all of the inodes. Should be 1023 entries listed\n");
     ls("/");
-
 
     for(i=0; i<numdirectories; i++)
     {
       sprintf(name, "/a%d", i);
       rd_unlink(name);
     }
-    printf("unlinked all 128 directories. LS should be empty\n");
+    printf("unlinked all 1023 directories. The next LS should be empty\n");
     ls("/");
 
     
@@ -104,7 +118,8 @@ int main()
       ls(name);
     }
 
-    //create and extra 31 files, to max out the file system
+    //create and extra 27 files, to max out the file system
+
     for(i=0; i<27; i++)
     {
       sprintf(name, "/d%d", i);
@@ -113,6 +128,8 @@ int main()
       writeCookieSong(fd, 1);
       rd_close(fd);
     }
+
+    ls("/");
 
 
     //
@@ -158,7 +175,7 @@ int main()
     //test unlinking a non-empty directory
     printf("\ntest to unlink a non-empty directory\n");
     sprintf(name, "/a%d", 1,1);
-    retval = unlink(name);
+    retval = rd_unlink(name);
     if(retval == -1)
     {
       printf("TEST PASSED: Failed to unlink directory. This is the expected behavior\n");
@@ -172,21 +189,20 @@ int main()
     printf("\ntest to unlink an open file\n");
     sprintf(name, "/a%d/b%d/c%d", 1,1,1);
     fd = rd_open(name);
-    retval = unlink(name);
+    retval = rd_unlink(name);
     if(retval == -1)
     {
       printf("TEST PASSED: Failed to unlink directory. This is the expected behavior\n");
     }
     else
     {
-      printf("TEST ERROR: Should have failed unlinking.\n");
+      printf("TEST ERROR: Should have failed unlinking. %d %d\n", fd, retval);
     }
     rd_close(fd);
 
-
     //test unlinking nonexistant file
     printf("\ntest to unlink nonexistant file\n");
-    retval = unlink("/nonexistant");
+    retval = rd_unlink("/nonexistant");
     if(retval == -1)
     {
       printf("TEST PASSED: Failed to unlink directory. This is the expected behavior\n");
@@ -267,7 +283,6 @@ int main()
       printf("TEST ERROR: should not have closed file successfully\n");
     }
 
-
     printf("\nUnlinking all of the files and subdirectories\n");
     for(i=0; i<27; i++)
     {
@@ -290,10 +305,16 @@ int main()
       sprintf(name, "/a%d", i);
       rd_unlink(name);
     }
+   for(i=0; i<27; i++)
+    {
+      sprintf(name, "/d%d", i);
+      rd_unlink(name);
+    }
 
     printf("unlinked files. ls should be empty\n");
     ls("/");
     
+
 
     //reading and writing in the direct pointer blocks
     printf("creating file to test correct writing to all of the direct blocks\n");
@@ -316,7 +337,6 @@ int main()
     rd_unlink("/cookies.txt");
 
 
-
     //reading and writing in the single indirect blocks
     printf("creating file to test correct writing to all of the indirect blocks\n");
     rd_creat("/friends.txt");
@@ -325,16 +345,17 @@ int main()
     rd_close(fd);
     //seek to somewhere in the indirect pointers
     bytesOut = testSize("/friends.txt");
+    more("/friends.txt", 488*8);
     if(bytesIn != bytesOut)
     {
-      printf("TEST ERROR: Logo\n");
+      printf("TEST ERROR: Logo (single indirect pointers)\n");
     }
     else
     {
-      printf("TEST PASSED: Logo\n");
+      printf("TEST PASSED: Logo  (single indirect pointers)\n");
     }
-    more("/friends.txt", 488*8);
     rd_unlink("/friends.txt");
+
 
     // Test the double indirect pointers
     printf("testing correct writing to the double indirect pointers\n");
@@ -345,11 +366,17 @@ int main()
     bytesOut = testSize("/big.txt");
     //seek to somewhere inside the double indirect pointers
     more("/big.txt", 488*43);
-
+   if(bytesIn != bytesOut)
+    {
+      printf("TEST ERROR: Logo (double indirect pointers)\n");
+    }
+    else
+    {
+      printf("TEST PASSED: Logo  (double indirect pointers)\n");
+    }
     rd_unlink("/big.txt");
 
 
-    //@TODO: test interleaving reads/writes of multiple files
     //@TODO: try using up all the blocks in the filesystem
 
     printf("testing filling up the file system\n");
@@ -357,19 +384,33 @@ int main()
     fd=rd_open("/huge1.txt");
     bytesIn = writeLogo(fd, 2186); //488*2186 = 1066768 -> just under
 				   //the max number of bytes in a file
+    bytesOut = testSize("/huge1.txt");
+    if(bytesIn != bytesOut)
+    {
+      printf("TEST ERROR: Huge File 1 (max file size)\n");
+    }
+    else
+    {
+      printf("TEST PASSED: Huge File 1 (max file size)\n");
+    }
     rd_close(fd);
+
     rd_creat("/huge2.txt");
     fd=rd_open("/huge2.txt");
-    bytesIn = writeLogo(fd, 2186); //488*2186 = 1066768 -> just under
+    retval = writeLogo(fd, 2186); //488*2186+1 = 1066769 -> just under
 				   //the max number of bytes in a file
     //should crap out somewhere in here b/c the file system is full.
     rd_close(fd);
+
+    if(retval != bytesIn)
+    {
+       printf("TEST PASSED: File system filled\n");
+    }
     
     rd_unlink("/huge1.txt");
     rd_unlink("/huge2.txt");
 
-
-    //@TODO: make "cat" and "i_cat" functions
+    ls("/");
 
     return 0;
 }
@@ -415,6 +456,8 @@ int more(char* path, int seek)
     printf("%s", buffer);
   }
   while(retval > 0);
+
+  rd_close(fd);
   return totalBytes;
 }
 
@@ -447,7 +490,7 @@ int writeCookieSong(int fd, int repeats)
 {
   char* string1 = "c is for cookie that's good enough for me. "; //43
   char* string2 = "oh! cookie cookie cookie starts with C. "; //40
-  char string3[6] ={"-= =-\n"};
+  char string3[7] ={"-= =-\n"};
   char* null="\0";
 
   int retval, i;
@@ -523,18 +566,18 @@ int writeLogo(int fd, int repeats)
   for(i=0; i<repeats; i++)
   {
     bytesWritten = rd_write(fd, logo, len);
-    totalBytes += bytesWritten;
     if(bytesWritten != len)
     {
-      printf("TEST ERROR (Logo): Did not write required number of bytes\n");
+      //printf("TEST ERROR (Logo): Did not write required number of bytes\n");
       break;
     }
+    totalBytes += bytesWritten;
   }
   bytesWritten = rd_write(fd, null, 1);
   totalBytes += bytesWritten;
   if(bytesWritten != 1)
   {
-      printf("TEST ERROR (Logo): Did not write required number of bytes\n");
+      //printf("TEST ERROR (Logo): Did not write required number of bytes\n");
   }
   return totalBytes;  
 }

@@ -41,7 +41,6 @@ The FdtableArray just contains a few of these Fdtable structs
 
 #ifndef USE_PTHREADS
 #include <linux/module.h>
-#include <linux/init.h>
 #include <linux/errno.h> /* error codes */
 #include <linux/proc_fs.h>
 #include <linux/tty.h>

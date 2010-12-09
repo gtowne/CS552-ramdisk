@@ -15,9 +15,10 @@ BITMAP:
 This implements the bitmap part of the assignment
 
 */
-
+#ifdef USE_PTHREADS
 #include <stdio.h>
 #include <stdlib.h>
+#endif
 
 #include "bitmap.h"
 

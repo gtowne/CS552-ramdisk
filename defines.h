@@ -37,6 +37,8 @@
 #define PRINT printk
 #endif
 
+#define DEBUG
+
 #endif
 
 

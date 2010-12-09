@@ -25,6 +25,12 @@ This implements the ramdisk part of the assignment
 
 #include "ramdisk.h"
 
+struct FdtableArray fdtablea;
+struct Ramdisk* RAMDISK;
+
+EXPORT_SYMBOL(fdtablea);
+EXPORT_SYMBOL(RAMDISK);
+
 //for debugging reading and writing
 int block_fill(struct Block* block)
 {
@@ -36,6 +42,16 @@ int block_fill(struct Block* block)
   return 0;
 }
 
+int rd_init(void)
+{
+    if(RAMDISK == NULL)
+    {
+       RAMDISK = vmalloc(RAMDISK_SIZE);
+       PRINT("RD_INIT\n");
+    }
+    _ramdisk_initialize(RAMDISK);
+    return 1;
+}
 
 int rd_creat(char *iPathname)
 {    
@@ -334,7 +350,7 @@ int rd_write(int fd, char* address, int num_bytes)
 	return -1;
     }
 
-    //TODO: Memory twiddling
+    //Memory twiddling
     bytesToWrite=num_bytes;
     totalBytes=0;
     while(bytesToWrite > 0)
@@ -342,11 +358,6 @@ int rd_write(int fd, char* address, int num_bytes)
       block = inode_get_block_for_byte_index(node, pos_in_file, &block_offset);
       if(block == NULL)
       {
-	if(node->size == 1067008)
-	{
-	  q=5;
-	  q = node->size;
-	}
 	block = inode_add_block(node, RAMDISK);
 	if(block == NULL)
 	{
@@ -519,7 +530,7 @@ int rd_unlink(char *pathname)
     //null out the former last entry
     _null_out_directory_entry((struct DirectoryEntry*)(&lastBlock->memory[lastOffset]));
 
-    inode_reduce_size(parentInode, RAMDISK, DIRECTORY_ENTRY_SIZE);
+    retval = inode_reduce_size(parentInode, RAMDISK, DIRECTORY_ENTRY_SIZE);
 
     if(retval < 0)
     {
@@ -628,7 +639,11 @@ int _ramdisk_initialize(struct Ramdisk* ramdisk)
 {
   int i;
   int ret;
-   
+
+  #ifdef DEBUG
+  PRINT("_ramdisk_initialize\n");
+  #endif   
+
   for(i=0; i<INODES; i++)
   {
     r_inode_init(&(ramdisk->inodes[i]));

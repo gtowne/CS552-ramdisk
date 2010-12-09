@@ -15,9 +15,10 @@ SUPERBLOCK:
 This implements the superblock part of the assignment
 
 */
-
+#ifdef USE_PTHREADS
 #include <stdio.h>
 #include <stdlib.h>
+#endif
 
 #include "superblock.h"
 

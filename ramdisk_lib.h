@@ -28,6 +28,7 @@ ramdisk_lib.h
 
 #define PROC_ENTRY "/proc/ramdisk_lib"
 
+int rd_init(void);
 int rd_creat    (char *pathname);
 int rd_mkdir    (char *pathname);
 int rd_open     (char *pathname);

@@ -34,10 +34,10 @@ int free_block(struct Block *block) {
 int allocate_directory_block(struct Block *block) {
 	// overwrite all directory fields with zeroes
 	struct DirectoryBlock *dirBlock;
+	int i;
 
 	dirBlock = (struct DirectoryBlock *) block;
 	
-	int i = 0;
 	for (i = 0; i < DIRECTORY_ENTRIES_PER_BLOCK; i++) {
 		_null_out_directory_entry(&(dirBlock->entries[i]));
 	}
@@ -168,6 +168,7 @@ int set_indirect_storage_block(struct Block *storage_block, int index,
 	}
 	
 	this_storage_block->children[index] = new_block;
+	return 1;
 }
 
 
@@ -220,10 +221,10 @@ int _null_out_block(struct Block *block) {
     int i;
     char* blockMemory;
 
-	cblockMemory = block->memory;
+	blockMemory = block->memory;
 	
 	for (i = 0; i < BLOCK_BYTES; i++) {
-		blockMemory[i] = NULL;
+		blockMemory[i] = '\0';
 	}
 	
 	return 1;
@@ -239,7 +240,7 @@ int _null_out_directory_entry(struct DirectoryEntry *entry) {
 	name = entry->name;
 
 	for (i = 0; i < DIR_ENTRY_NAME_BYTES; i++) {
-		name[i] = NULL;
+		name[i] = '\0';
 	}
 	
 	return 1;

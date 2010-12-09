@@ -23,6 +23,13 @@ int ioctl_fd;
  *  @TODO: Pass back appropriate return values
  */
 
+int rd_init(){
+	ioctl_fd = open (PROC_ENTRY, O_RDONLY);
+
+	ioctl(ioctl_fd, RD_INIT, 0);
+	return 0;
+}
+
 int rd_creat    (char *pathname) {
 	struct pathname_args_t args;
 
@@ -151,6 +158,7 @@ int rd_readdir  (int fd, char *address) {
 	return args.ret_val;
 }
 
+/*
 int main() {
 
 	char a = 'a';
@@ -162,3 +170,4 @@ int main() {
 	rd_seek(6, 14);
 	rd_readdir(12, &a);
 }
+*/

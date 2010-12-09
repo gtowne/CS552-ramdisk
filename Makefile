@@ -1,7 +1,11 @@
-obj-m += ramdisk_kernel_lib.o
-ramdisk_kernel_lib-objs := ramdisk.o bitmap.o block.o inode.o fdtable.o string_utils.o superblock.o
+#obj-m += testmod.o
+#testmodule-objs := ramdisk.o bitmap.o block.o inode.o fdtable.o string_utils.o superblock.o
+#testmod-objs := testmodule.o string_utils.o
 
-GCC = gcc
+obj-m += ramdisk_module.o
+ramdisk_module-objs := ramdisk_kernel_lib.o ramdisk.o bitmap.o block.o inode.o fdtable.o string_utils.o superblock.o
+
+GCC = g++
 CXXFLAGS = -g -DDEBUG -DMODULE -D__KERNEL__
 KDIR = /usr/src/kernels/kernel-2.6.18/linux-2.6.18.i686/
 PWD = $(shell pwd)
@@ -9,8 +13,24 @@ PWD = $(shell pwd)
 #all: BitmapTest FdtableTest RamdiskTest SuperblockTest kernel
 
 #kernel: 
-all:
+all: ramdisk_test multi_process_test
 	make -C $(KDIR) SUBDIRS=$(PWD) modules	
+
+test_init: test_init.c ramdisk_lib.o
+	$(GCC) -o test_init test_init.c ramdisk_lib.o
+
+test_create: test_create.c ramdisk_lib.o
+	$(GCC) -o test_create test_create.c ramdisk_lib.o
+
+ramdisk_test: ramdisk_test.c ramdisk_lib.o
+	$(GCC) -g -o ramdisk_test ramdisk_test.c ramdisk_lib.o
+
+multi_process_test: multi_process_test.c ramdisk_lib.o
+	$(GCC) -g -o multi_process_test multi_process_test.c ramdisk_lib.o
+
+ramdisk_lib.o: ramdisk_lib.c ramdisk_lib.h ramdisk_kernel_lib.h
+	$(GCC) -c -g ramdisk_lib.c
+
 
 #RamdiskTest: ramdisk_test.c ramdisk.o bitmap.o block.o inode.o fdtable.o string_utils.o superblock.o
 #	$(GCC) -o RamdiskTest $(CXXFLAGS) ramdisk_test.c ramdisk.o bitmap.o block.o inode.o fdtable.o string_utils.o superblock.o -lpthread
@@ -56,4 +76,5 @@ all:
 
 clean:
 #	rm *.o BitmapTest RamdiskTest FdtableTest InodeTest SuperblockTest kernel
+	rm ramdisk_test
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) clean

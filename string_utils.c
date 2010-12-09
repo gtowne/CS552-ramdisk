@@ -15,7 +15,6 @@
  */
 
 #include "string_utils.h"
-//#include <stdio.h>
 
 
 int str_copy(char* src, char* dst, int max_chars) {
@@ -24,12 +23,12 @@ int str_copy(char* src, char* dst, int max_chars) {
 	for (i = 0; i < max_chars; i++) {
 		dst[i] = src[i];
 		
-		if (src[i] == NULL) {
+		if (src[i] == '\0') {
 			break;
 		}
 	}
 	
-	dst[max_chars - 1] = NULL;
+	dst[max_chars - 1] = '\0';
 	
 	return 1;
 }
@@ -42,7 +41,7 @@ int str_equals(char* str1, char* str2, int max_chars) {
 			return -1;
 		}
 		
-		if (str1[i] == NULL) { // must both be null if we've gotten here
+		if (str1[i] == '\0') { // must both be null if we've gotten here
 			break;
 		}
 	}
@@ -64,7 +63,7 @@ int str_len(char* str, int max_chars)
       return i;
     }
   }
-
+  return -1;
 }
 
 int str_next_token(char* str, int start_pos, int max_chars, char delim)

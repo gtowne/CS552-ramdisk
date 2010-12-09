@@ -15,9 +15,10 @@ FILE DESCRIPTOR TABLE:
 This implements the file descriptor table part of the assignment
 
 */
-
+#ifdef USE_PTHREADS
 #include <stdio.h>
 #include <stdlib.h>
+#endif
 
 #include "fdtable.h"
 
@@ -178,7 +179,7 @@ int fdtable_checkforinode(int inodenum, struct Fdtable *fdtable)
         }
     }
     
-    return 0;
+    return -1;
 }
 
 int _fdtable_print(struct Fdtable *fdtable)
@@ -206,12 +207,12 @@ int fdtable_a_initialize(struct FdtableArray *fdtablea)
     
     for (ii = 0; ii < fdtablea->a_size; ii++)
     {
-        fdtable_initialize(-1, (Fdtable*)&(fdtablea->array[ii]));
+        fdtable_initialize(-1, (struct Fdtable*)&(fdtablea->array[ii]));
     }
     
     return 0;
 }
-int fdtable_a_createtable(int pid, FdtableArray *fdtablea)
+int fdtable_a_createtable(int pid, struct FdtableArray *fdtablea)
 {
     int ii;
 
@@ -236,7 +237,7 @@ int fdtable_a_createentry(int pid, int inodenum, struct FdtableArray *fdtablea)
     {
         if (fdtablea->array[ii].pid == pid)
         {
-            return fdtable_createentry(inodenum, (Fdtable*)&(fdtablea->array[ii]));
+            return fdtable_createentry(inodenum, (struct Fdtable*)&(fdtablea->array[ii]));
         }
     }
 
@@ -250,7 +251,7 @@ int fdtable_a_createentry(int pid, int inodenum, struct FdtableArray *fdtablea)
     {
         if (fdtablea->array[ii].pid == pid)
         {
-            return fdtable_createentry(inodenum, (Fdtable*)&(fdtablea->array[ii]));
+            return fdtable_createentry(inodenum, (struct Fdtable*)&(fdtablea->array[ii]));
         }
     }
     
@@ -264,7 +265,7 @@ int fdtable_a_seekwithfd(int pid, int fd, int offset, struct FdtableArray *fdtab
     {
         if (fdtablea->array[ii].pid == pid)
         {
-            return fdtable_seekwithfd(fd, offset, (Fdtable*)&(fdtablea->array[ii]));
+            return fdtable_seekwithfd(fd, offset, (struct Fdtable*)&(fdtablea->array[ii]));
         }
     }
         
@@ -278,7 +279,7 @@ int fdtable_a_seekwithinodenum(int pid, int inodenum, int offset, struct Fdtable
     {
         if (fdtablea->array[ii].pid == pid)
         {
-            return fdtable_seekwithinodenum(inodenum, offset, (Fdtable*)&(fdtablea->array[ii]));
+            return fdtable_seekwithinodenum(inodenum, offset, (struct Fdtable*)&(fdtablea->array[ii]));
         }
     }
         
@@ -292,7 +293,7 @@ int fdtable_a_removeatfd(int pid, int fd, struct FdtableArray *fdtablea)
     {
         if (fdtablea->array[ii].pid == pid)
         {
-            return fdtable_removeatfd(fd, (Fdtable*)&(fdtablea->array[ii]));
+            return fdtable_removeatfd(fd, (struct Fdtable*)&(fdtablea->array[ii]));
         }
     }
         
@@ -306,7 +307,7 @@ int fdtable_a_removeatinodenum(int pid, int inodenum, struct FdtableArray *fdtab
     {
         if (fdtablea->array[ii].pid == pid)
         {
-            return fdtable_removeatinodenum(inodenum, (Fdtable*)&(fdtablea->array[ii]));
+            return fdtable_removeatinodenum(inodenum, (struct Fdtable*)&(fdtablea->array[ii]));
         }
     }
         
@@ -321,7 +322,7 @@ int fdtable_a_inodeforfd(int pid, int fd, struct FdtableArray *fdtablea)
     {
         if (fdtablea->array[ii].pid == pid)
         {
-            return fdtable_inodeforfd(fd, (Fdtable*)&(fdtablea->array[ii]));
+            return fdtable_inodeforfd(fd, (struct Fdtable*)&(fdtablea->array[ii]));
         }
     }
         
@@ -336,7 +337,7 @@ int fdtable_a_positionforfd(int pid, int fd, struct FdtableArray *fdtablea)
     {
         if (fdtablea->array[ii].pid == pid)
         {
-            return fdtable_positionforfd(fd, (Fdtable*)&(fdtablea->array[ii]));
+            return fdtable_positionforfd(fd, (struct Fdtable*)&(fdtablea->array[ii]));
         }
     }
         
@@ -349,17 +350,13 @@ int fdtable_a_checkforinode(int pid, int inodenum, struct FdtableArray *fdtablea
 
     for (ii = 0; ii < fdtablea->a_size; ii++)
     {
-        if (fdtablea->array[ii].pid != pid)
-        {
-            if (fdtable_checkforinode(inodenum, (Fdtable*)&(fdtablea->array[ii])) == 1)
-            {
-                return 1;
-            }
-            
-        }
+       if (fdtable_checkforinode(inodenum, (struct Fdtable*)&(fdtablea->array[ii])) == 1)
+       {
+            return 1;
+       }
     }
         
-    return 0;
+    return -1;
 }
 
 int _fdtable_a_print(struct FdtableArray *fdtablea)
@@ -369,7 +366,7 @@ int _fdtable_a_print(struct FdtableArray *fdtablea)
     for (ii = 0; ii < fdtablea->a_size; ii++)
     {
         PRINT("Table For Process: %d\n", fdtablea->array[ii].pid);
-        _fdtable_print((Fdtable*)&(fdtablea->array[ii]));
+        _fdtable_print((struct Fdtable*)&(fdtablea->array[ii]));
         PRINT("\n");
     }
     return 0;

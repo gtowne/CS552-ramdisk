@@ -15,7 +15,9 @@ INODE:
 This implements the iNode part of the assignment
 
 */
+#ifdef USE_PTHREADS
 #include <stdio.h>
+#endif
 
 #include "inode.h"
 #include "ramdisk.h"
@@ -58,7 +60,6 @@ struct Block* inode_get_block_for_byte_index(struct IndexNode* iNode,
   int entries_squared;
   int numDoublePointers;
   int doubleIdx;
-  int indirectIdx;
   struct Block* block;
   struct Block* doubleIndirect;
   struct Block* indirect;
@@ -145,9 +146,8 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   int entries_squared;
   int numDoublePointers;
   int doubleIdx;
-  int indirectIdx;
   struct Block* block;
-  struct Block* indirect
+  struct Block* indirect;
 
   block = _ramdisk_allocate_block(iRamDisk);
   if(block == NULL)
@@ -372,7 +372,6 @@ int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
   int entries_squared;
   int numDoublePointers;
   int doubleIdx;
-  int indirectIdx;
   struct Block* doomed;
   struct Block* doubleIndirect;
   struct Block* indirect;

@@ -27,6 +27,7 @@ This implements the bitmap part of the assignment
 #include "fdtable.h"
 
 #ifndef USE_PTHREADS
+#include <linux/vmalloc.h>
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/errno.h> /* error codes */
@@ -55,6 +56,7 @@ struct Ramdisk //Ramdisk struct
 
 // Interface Functions
 
+int rd_init     (void);
 int rd_creat    (char *pathname);
 int rd_mkdir    (char *pathname);
 int rd_open     (char *pathname);
@@ -71,6 +73,7 @@ int rd_readdir  (int fd, char *address);
 
 int block_fill(struct Block* block);
 
+int _ramdisk_initialize(struct Ramdisk* ramdisk);
 struct Block* _ramdisk_allocate_block(struct Ramdisk* iRamDisk);
 int _ramdisk_deallocate_block(struct Ramdisk* iRamDisk, struct Block* iBlock);
 

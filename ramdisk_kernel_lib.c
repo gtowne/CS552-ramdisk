@@ -29,10 +29,13 @@ ramdisk_kernel_lib.h
 
 #include "ramdisk_kernel_lib.h"
 
-// UNCOMMENT FOLLOWING LINE WHEN RAMDISK SUCCESSFULLY COMPILES
-//
-//
 #include "ramdisk.h"
+/*
+static struct FdtableArray fdtablea;
+static struct Ramdisk* RAMDISK;
+EXPORT_SYMBOL(fdtablea);
+EXPORT_SYMBOL(RAMDISK);
+*/
 
 MODULE_LICENSE("GPL");
 
@@ -43,9 +46,18 @@ static struct file_operations pseudo_dev_proc_operations;
 
 static struct proc_dir_entry *proc_entry;
 
+int handle_init(void)
+{
+  rd_init();
+  return 0;
+}
+
 int handle_creat_call(unsigned long ioctl_arg) {
 	
 	struct pathname_args_t creat_args;
+	char buff[1024];
+	//char buff[creat_args.str_len];
+	printk("RD_CREAT ioctl\n");
 
 	if (0 != copy_from_user(&creat_args, (struct pathname_args_t *)ioctl_arg, 
 		   sizeof(struct pathname_args_t))) {
@@ -53,7 +65,6 @@ int handle_creat_call(unsigned long ioctl_arg) {
 		return -1;
 	}
 		   
-	char buff[creat_args.str_len];
 	
 	if (0 != copy_from_user(&buff, creat_args.pathname, creat_args.str_len)) {
 		printk("Error copying pathname from user\n");
@@ -73,12 +84,14 @@ int handle_creat_call(unsigned long ioctl_arg) {
 		return -1;
 	}
 
+	printk("RD_CREAT SUCCESSFUL\n");
 	return 1;
 }
 
 int handle_mkdir_call(unsigned long ioctl_arg) {
 	
 	struct pathname_args_t mkdir_args;
+	char buff[1024];
 
 	if (0 != copy_from_user(&mkdir_args, (struct pathname_args_t *)ioctl_arg, 
 		   sizeof(struct pathname_args_t))) {
@@ -86,7 +99,7 @@ int handle_mkdir_call(unsigned long ioctl_arg) {
 		return -1;
 	}
 		   
-	char buff[mkdir_args.str_len];
+	//char buff[mkdir_args.str_len];
 	
 	if (0 != copy_from_user(&buff, mkdir_args.pathname, mkdir_args.str_len)) {
 		printk("Error copying pathname from user\n");
@@ -112,6 +125,7 @@ int handle_mkdir_call(unsigned long ioctl_arg) {
 int handle_open_call(unsigned long ioctl_arg) {
 	
 	struct pathname_args_t open_args;
+	char buff[1024];
 
 	if (0 != copy_from_user(&open_args, (struct pathname_args_t *)ioctl_arg, 
 		   sizeof(struct pathname_args_t))) {
@@ -119,7 +133,7 @@ int handle_open_call(unsigned long ioctl_arg) {
 		return -1;
 	}
 		   
-	char buff[open_args.str_len];
+	//char buff[open_args.str_len];
 	
 	if (0 != copy_from_user(&buff, open_args.pathname, open_args.str_len)) {
 		printk("Error copying pathname from user\n");
@@ -132,7 +146,7 @@ int handle_open_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	mkdir_args.ret_val = rd_open(buff);
+	open_args.ret_val = rd_open(buff);
 
 	if (0 != copy_to_user((void*) ioctl_arg, (void*) &open_args, sizeof(struct pathname_args_t))) {
 		printk("Error copying open return value to user level\n");
@@ -145,6 +159,7 @@ int handle_open_call(unsigned long ioctl_arg) {
 int handle_close_call(unsigned long ioctl_arg) {
 	
 	struct close_args_t close_args;
+	int fd;
 
 	if (0 != copy_from_user(&close_args, (struct close_args_t *)ioctl_arg, 
 		   sizeof(struct close_args_t))) {
@@ -152,7 +167,7 @@ int handle_close_call(unsigned long ioctl_arg) {
 		return -1;
 	}
 	
-	int fd = close_args.fd;
+	fd = close_args.fd;
 
 #ifdef DEBUG
 	printk("Received close call with arg %i\n", fd);
@@ -160,7 +175,7 @@ int handle_close_call(unsigned long ioctl_arg) {
 
 	//	UNCOMMENT TO PASS TO RAMDISK
 	// 
-	// close_args.ret_val = rd_close(fd);
+	close_args.ret_val = rd_close(fd);
 
 	if (0 != copy_to_user((void*) ioctl_arg, (void*) &close_args, sizeof(struct close_args_t))) {
 		printk("Error copyting close return value to user level\n");
@@ -173,16 +188,20 @@ int handle_close_call(unsigned long ioctl_arg) {
 int handle_read_call(unsigned long ioctl_arg) {
 	
 	struct read_write_args_t read_args;
+	int fd;
+	char* address;
+	int num_bytes;	
 
+#
 	if (0 != copy_from_user(&read_args, (struct read_write_args_t *)ioctl_arg, 
 		   sizeof(struct read_write_args_t))) {
 		printk("Error copying creat args from user\n");
 		return -1;
 	}
 	
-	int fd = read_args.fd;
-	char* address = read_args.address;
-	int num_bytes = read_args.num_bytes;	
+	fd = read_args.fd;
+	address = read_args.address;
+	num_bytes = read_args.num_bytes;	
 
 #ifdef DEBUG
 	printk("Received read call with args %i, %i, %i\n", fd, (int) address, num_bytes);
@@ -203,6 +222,9 @@ int handle_read_call(unsigned long ioctl_arg) {
 int handle_write_call(unsigned long ioctl_arg) {
 	
 	struct read_write_args_t write_args;
+	int fd;
+	char* address;
+	int num_bytes;	
 
 	if (0 != copy_from_user(&write_args, (struct read_write_args_t *)ioctl_arg, 
 		   sizeof(struct read_write_args_t))) {
@@ -210,9 +232,9 @@ int handle_write_call(unsigned long ioctl_arg) {
 		return -1;
 	}
 	
-	int fd = write_args.fd;
-	char* address = write_args.address;
-	int num_bytes = write_args.num_bytes;	
+	fd = write_args.fd;
+	address = write_args.address;
+	num_bytes = write_args.num_bytes;	
 
 #ifdef DEBUG
 	printk("Received write call with args %i, %i, %i\n", fd, (int) address, num_bytes);
@@ -233,6 +255,8 @@ int handle_write_call(unsigned long ioctl_arg) {
 int handle_seek_call(unsigned long ioctl_arg) {
 	
 	struct seek_args_t seek_args;
+	int fd;
+	int offset;
 
 	if (0 != copy_from_user(&seek_args, (struct seek_args_t *)ioctl_arg, 
 		   sizeof(struct seek_args_t))) {
@@ -240,8 +264,8 @@ int handle_seek_call(unsigned long ioctl_arg) {
 		return -1;
 	}
 	
-	int fd = seek_args.fd;
-	int offset = seek_args.offset;
+	fd = seek_args.fd;
+	offset = seek_args.offset;
 
 #ifdef DEBUG
 	printk("Received seek call with args %i, %i\n", fd, offset);
@@ -262,6 +286,8 @@ int handle_seek_call(unsigned long ioctl_arg) {
 int handle_readdir_call(unsigned long ioctl_arg) {
 	
 	struct read_write_args_t readdir_args;
+	int fd;
+	char* address;
 
 	if (0 != copy_from_user(&readdir_args, (struct read_write_args_t *)ioctl_arg, 
 		   sizeof(struct read_write_args_t))) {
@@ -269,8 +295,8 @@ int handle_readdir_call(unsigned long ioctl_arg) {
 		return -1;
 	}
 	
-	int fd = readdir_args.fd;
-	char* address = readdir_args.address;
+	fd = readdir_args.fd;
+	address = readdir_args.address;
 
 #ifdef DEBUG
 	printk("Received readdir call with args %i, %i\n", fd, (int) address);
@@ -291,6 +317,7 @@ int handle_readdir_call(unsigned long ioctl_arg) {
 int handle_unlink_call(unsigned long ioctl_arg) {
 	
 	struct pathname_args_t unlink_args;
+	char buff[1024];
 
 	if (0 != copy_from_user(&unlink_args, (struct pathname_args_t *)ioctl_arg, 
 		   sizeof(struct pathname_args_t))) {
@@ -298,7 +325,7 @@ int handle_unlink_call(unsigned long ioctl_arg) {
 		return -1;
 	}
 		   
-	char buff[unlink_args.str_len];
+	//char buff[unlink_args.str_len];
 	
 	if (0 != copy_from_user(&buff, unlink_args.pathname, unlink_args.str_len)) {
 		printk("Error copying pathname from user\n");
@@ -327,6 +354,11 @@ static int pseudo_device_ioctl(struct inode *inode, struct file *file,
   
   switch (cmd){
 
+  case RD_INIT:
+   	down_interruptible(&mutex);
+   	handle_init();
+   	up(&mutex);
+   	break;
   case RD_CREAT:
     down_interruptible(&mutex);
 	handle_creat_call(arg);
@@ -406,6 +438,8 @@ static int __init initialization_routine(void) {
 	proc_entry->proc_fops = &pseudo_dev_proc_operations;
 	
 	sema_init(&mutex, 1);
+
+	RAMDISK = NULL;
 	
 	return 0;
 }
@@ -414,7 +448,9 @@ static int __init initialization_routine(void) {
 static void __exit cleanup_routine(void) {
 	
 	printk("<1> Dumping ramdisk_kernel_lib module\n");
-	remove_proc_entry("ioctl_test", &proc_root);
+	remove_proc_entry(PROC_MODULE_NAME, &proc_root);
+        //@TODO: Deallocate RAMDISK
+	vfree(RAMDISK);
 	
 	return;
 }
