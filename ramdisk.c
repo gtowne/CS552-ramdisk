@@ -416,6 +416,9 @@ int rd_seek(int fd, int offset)
 {
 	int pid;
 	int retval;
+    int idx;
+    struct IndexNode* node;
+    int size;
 	
     superblock_lock(&(RAMDISK->superblock));
 
@@ -424,7 +427,19 @@ int rd_seek(int fd, int offset)
     #else
     pid = current->pid;
 	#endif
-    retval = fdtable_a_seekwithfd(pid, fd, offset, &fdtablea);
+
+    if (offset == -1)
+    {
+        idx = fdtable_a_inodeforfd(pid, fd, &fdtablea);
+        node = &(RAMDISK->inodes[idx]);
+        size = node->size;
+        retval = fdtable_a_seekwithfd(pid, fd, size, &fdtablea);
+    }
+    else
+    {
+        retval = fdtable_a_seekwithfd(pid, fd, offset, &fdtablea);
+    }
+    
     if (retval < 0)
     {
         PRINT("ERROR::: Ramdisk:: seek: could not seek\n");
@@ -644,6 +659,8 @@ int _ramdisk_initialize(struct Ramdisk* ramdisk)
   PRINT("_ramdisk_initialize\n");
   #endif   
 
+  superblock_initialize(&(ramdisk->superblock));
+
   for(i=0; i<INODES; i++)
   {
     r_inode_init(&(ramdisk->inodes[i]));
@@ -665,12 +682,13 @@ int _ramdisk_initialize(struct Ramdisk* ramdisk)
       //ERROR!!
     }
   }
+  ramdisk->superblock.free_blocks -= OVERHEAD_BLOCKS;
 
   //now, configure the "/" directory.
   ramdisk->inodes[0].type = RAMDISK_DIR;
-  //initially all pointers all null, so everything should be set now.
-
-  superblock_initialize(&(ramdisk->superblock));
+  ramdisk->superblock.free_inodes --;
+   
+  
 
   fdtable_a_initialize(&fdtablea);
 
@@ -684,8 +702,12 @@ struct Block* _ramdisk_allocate_block(struct Ramdisk* ramdisk)
   int index;
   struct Block* block;
   struct Block *begin, *end;
-  int blah;
   
+ if(ramdisk->superblock.free_blocks == 0)
+ {
+      PRINT("Ramdisk::allocate_inode: no more iNodes\n");
+      return NULL;
+ }
   ret = bitmap_get_one_block(&(ramdisk->bitmap));
   if (ret < 0)
   {
@@ -706,13 +728,11 @@ struct Block* _ramdisk_allocate_block(struct Ramdisk* ramdisk)
   index = ret-OVERHEAD_BLOCKS;
   block = &(ramdisk->blocks[index]);
   _null_out_block(block);
-
+  ramdisk->superblock.free_blocks --;
   
 
   begin=&(ramdisk->blocks[0]);
   end  =&(ramdisk->blocks[FS_BLOCKS-1]);
-
-  blah = block-begin;
 
   return block;  
 }
@@ -740,6 +760,7 @@ int _ramdisk_deallocate_block(struct Ramdisk* ramdisk, struct Block* block)
   {
     PRINT("Error: Why is this bit still set?\n");
   }
+  ramdisk->superblock.free_blocks ++;
 
 
   if(ret != 0)
@@ -758,6 +779,12 @@ int _ramdisk_allocate_inode(struct Ramdisk* ramdisk, enum NodeType type)
 {
     //@TODO: use the superblock for book-keeping
   int i;
+ if(ramdisk->superblock.free_inodes == 0)
+ {
+      PRINT("Ramdisk::allocate_inode: no more iNodes\n");
+      return -1;
+ }
+ ramdisk->superblock.free_inodes --;
   for(i=0; i<INODES; i++)
   {
     if(ramdisk->inodes[i].type == RAMDISK_UNALLOCATED)
@@ -796,6 +823,7 @@ int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index)
   return -1;
   }
 
+  ramdisk->superblock.free_inodes ++;
   ramdisk->inodes[index].type = RAMDISK_UNALLOCATED;
   r_inode_init(&(ramdisk->inodes[index]));
   return 0;

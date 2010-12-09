@@ -31,7 +31,7 @@ int ls(char* path)
 
 int more(char* path, int seek)
 {
-  printf("This is MORE\n");
+  printf("This is MORE %s\n", path);
   char buffer[1000];
   buffer[1000]='\0';
   int fd = rd_open(path);
@@ -56,7 +56,7 @@ int more(char* path, int seek)
   return totalBytes;
 }
 
-int writeLogo(int fd, int repeats)
+int writeLogo(int fd, int repeats, int writeNull)
 {
   char* null="\0";
   char * logo=
@@ -83,11 +83,15 @@ int writeLogo(int fd, int repeats)
     }
     totalBytes += bytesWritten;
   }
+
+  if(writeNull == 1)
+  {
   bytesWritten = rd_write(fd, null, 1);
   totalBytes += bytesWritten;
   if(bytesWritten != 1)
   {
       //printf("TEST ERROR (Logo): Did not write required number of bytes\n");
+  }
   }
   return totalBytes;  
 }
@@ -95,6 +99,8 @@ int writeLogo(int fd, int repeats)
 
 int main(int argc, char** argv) {
     if (argc != 3) {
+      printf("usage: ./multi_process_test [num_processes] [iterations]\n");
+
 		return -1;
 	}
 
@@ -103,6 +109,8 @@ int main(int argc, char** argv) {
     int num_execs = atoi(argv[2]);
 
     rd_init();
+
+    rd_creat("/thesharedfile");
 
     pid_t parentPid = getpid();
     int i;
@@ -119,11 +127,20 @@ int main(int argc, char** argv) {
         for (j = 0; j < numProcesses; j++) {
             wait(&i);
         }
+        int read = more("/thesharedfile", 0);
+        printf("Unlinking the shared file\n");
+        rd_unlink("/thesharedfile");
     }
 }
 
 int ramdisk_muscle_flexer(int num_execs) {
     printf("Entering process : %u\n", getpid());
+    
+    printf("Process %u: wrote to shared file\n", getpid());
+    int fdShared = rd_open("/thesharedfile");
+    rd_seek(fdShared, -1);
+    int written = writeLogo(fdShared, 1,0);
+    rd_close(fdShared);
 
     char startDir[14];
     
@@ -150,7 +167,7 @@ int ramdisk_muscle_flexer(int num_execs) {
 
         int fdFileA = rd_open(fileA);
         
-        int bytesWritten = writeLogo(fdFileA, 2);
+        int bytesWritten = writeLogo(fdFileA, 2,1);
 
         int bytesRead = more(fileA, 0);    
 
@@ -159,7 +176,7 @@ int ramdisk_muscle_flexer(int num_execs) {
         } else {
             printf("ERROR: Process %u bytes written: %i not equal read %i\n", getpid(),bytesWritten,  bytesRead);
         }
-
+        
         rd_close(fdFileA);
         rd_unlink(fileA);
         rd_unlink(fileB);

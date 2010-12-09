@@ -1,0 +1,12 @@
+make
+insmod ramdisk_module
+./ramdisk_test 0
+./ramdisk_test 1
+./ramdisk_test 2
+./ramdisk_test 3
+./ramdisk_test 4
+./ramdisk_test 5
+./ramdisk_test 6
+./ramdisk_test 7
+
+./multi_process_test 5 300
