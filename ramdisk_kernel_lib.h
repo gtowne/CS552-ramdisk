@@ -50,6 +50,13 @@ struct seek_args_t
     int ret_val;
 };
 
+struct test_args_t
+{
+    int inodes;
+    int blocks;
+    int ret_val;
+};
+
 #define RD_CREAT _IOW(0, 6, struct pathname_args_t)
 #define RD_MKDIR _IOW(0, 7, struct pathname_args_t)
 #define RD_OPEN _IOW(0, 8, struct pathname_args_t)
@@ -60,6 +67,7 @@ struct seek_args_t
 #define RD_READDIR _IOW(0, 13, struct read_write_args_t)
 #define RD_UNLINK _IOW(0, 14, struct pathname_args_t)
 #define RD_INIT _IOW(0, 15, struct pathname_args_t)
+#define RD_TEST _IOW(0,16, struct test_args_t)
 
 #define PROC_MODULE_NAME "ramdisk_lib"
 

@@ -30,21 +30,37 @@ ramdisk_kernel_lib.h
 #include "ramdisk_kernel_lib.h"
 
 #include "ramdisk.h"
-/*
-static struct FdtableArray fdtablea;
-static struct Ramdisk* RAMDISK;
-EXPORT_SYMBOL(fdtablea);
-EXPORT_SYMBOL(RAMDISK);
-*/
 
 MODULE_LICENSE("GPL");
 
-// Had to move this here, would not compile otherwise
 struct semaphore mutex;
 
 static struct file_operations pseudo_dev_proc_operations;
 
 static struct proc_dir_entry *proc_entry;
+
+int handle_test(unsigned long ioctl_arg)
+{
+    struct test_args_t test_args;
+    if(0 != copy_from_user(&test_args, (struct test_args_t *)ioctl_arg,
+			   sizeof(struct test_args_t)))
+    {
+      printk("Error copying test args from user\n");
+      return -1;
+    }
+
+    test_args.ret_val = rd_test(&(test_args.inodes), &(test_args.blocks));
+    
+
+    if (0 != copy_to_user((void*) ioctl_arg, &test_args, sizeof(struct test_args_t)))
+    {
+        printk("Error copyting test return value to user level\n");
+        return -1;
+    }
+
+    printk("RD_CREAT SUCCESSFUL\n");
+    return 1;
+}
 
 int handle_init(void)
 {
@@ -75,7 +91,7 @@ int handle_creat_call(unsigned long ioctl_arg)
     }
 
 #ifdef DEBUG
-    printk("Received creat call with arg %s\n", buff);
+    printk("Received creat call with arg %x\n", buff);
 #endif
 
     //	UNCOMMENT TO PASS TO RAMDISK
@@ -114,7 +130,7 @@ int handle_mkdir_call(unsigned long ioctl_arg)
     }
 
 #ifdef DEBUG
-    printk("Received mkdir call with arg %s\n", buff);
+    printk("Received mkdir call with arg %x\n", buff);
 #endif
 
     //	UNCOMMENT TO PASS TO RAMDISK
@@ -152,7 +168,7 @@ int handle_open_call(unsigned long ioctl_arg)
     }
 
 #ifdef DEBUG
-    printk("Received open call with arg %s\n", buff);
+    printk("Received open call with arg %x\n", buff);
 #endif
 
     //	UNCOMMENT TO PASS TO RAMDISK
@@ -444,6 +460,11 @@ static int pseudo_device_ioctl(struct inode *inode, struct file *file,
         handle_unlink_call(arg);
         up(&mutex);
         break;
+
+    case RD_TEST:
+        down_interruptible(&mutex);
+        handle_test(arg);
+        up(&mutex);        
 
     default:
         return -EINVAL;

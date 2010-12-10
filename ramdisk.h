@@ -66,10 +66,8 @@ int rd_write    (int fd, char* address, int num_bytes);
 int rd_seek     (int fd, int offset);
 int rd_unlink   (char *pathname);
 int rd_readdir  (int fd, char *address);
-
+int rd_test     (int* free_inodes, int* free_blocks);
 // Other Functions
-
-//int _ramdisk_parsepath  (char *pathname); //Parses the pathname to an inode index (parent inode of the requested file)
 
 int block_fill(struct Block* block);
 

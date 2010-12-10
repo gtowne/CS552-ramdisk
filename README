@@ -1,5 +1,5 @@
 make
-insmod ramdisk_module
+insmod ramdisk_module.ko
 ./ramdisk_test 0
 ./ramdisk_test 1
 ./ramdisk_test 2

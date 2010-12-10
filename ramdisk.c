@@ -42,6 +42,13 @@ int block_fill(struct Block* block)
     return 0;
 }
 
+int rd_test(int* free_inodes, int* free_blocks)
+{
+  *free_inodes = RAMDISK->superblock.free_inodes;
+  *free_blocks = RAMDISK->superblock.free_blocks;
+  return 1;
+}
+
 int rd_init(void)
 {
     if(RAMDISK == NULL)
@@ -315,7 +322,6 @@ int rd_write(int fd, char* address, int num_bytes)
     int bytesWritten;
     int totalBytes;
     struct Block* block;
-    int q;
     int retval;
 
     superblock_lock(&(RAMDISK->superblock));
@@ -655,6 +661,7 @@ int _ramdisk_initialize(struct Ramdisk* ramdisk)
 {
     int i;
     int ret;
+    int root;
 
 #ifdef DEBUG
     PRINT("_ramdisk_initialize\n");
@@ -686,10 +693,11 @@ int _ramdisk_initialize(struct Ramdisk* ramdisk)
     ramdisk->superblock.free_blocks -= OVERHEAD_BLOCKS;
 
     //now, configure the "/" directory.
-    ramdisk->inodes[0].type = RAMDISK_DIR;
-    ramdisk->superblock.free_inodes --;
-
-
+    root = _ramdisk_allocate_inode(ramdisk, RAMDISK_DIR);
+    if(root != 0)
+    {
+      PRINT("Ramdisk:: initialize: error configuring root directory\n");
+    }
 
     fdtable_a_initialize(&fdtablea);
 
@@ -702,7 +710,6 @@ struct Block* _ramdisk_allocate_block(struct Ramdisk* ramdisk)
     int ret;
     int index;
     struct Block* block;
-    struct Block *begin, *end;
 
     if(ramdisk->superblock.free_blocks == 0)
     {
@@ -722,19 +729,14 @@ struct Block* _ramdisk_allocate_block(struct Ramdisk* ramdisk)
         return NULL;
     }
 
-#ifdef DEBUG
-    PRINT("Ramdisk::allocate_block: allocated block # %d\n", ret);
-#endif
-
     index = ret-OVERHEAD_BLOCKS;
     block = &(ramdisk->blocks[index]);
     _null_out_block(block);
-    ramdisk->superblock.free_blocks --;
+    ramdisk->superblock.free_blocks--;
 
-
-    begin=&(ramdisk->blocks[0]);
-    end  =&(ramdisk->blocks[FS_BLOCKS-1]);
-
+#ifdef DEBUG
+    PRINT("Ramdisk::allocate_block: allocated block # %d. %hd blocks free\n", ret, ramdisk->superblock.free_blocks);
+#endif
     return block;
 }
 
@@ -761,7 +763,7 @@ int _ramdisk_deallocate_block(struct Ramdisk* ramdisk, struct Block* block)
     {
         PRINT("Error: Why is this bit still set?\n");
     }
-    ramdisk->superblock.free_blocks ++;
+    ramdisk->superblock.free_blocks++;
 
 
     if(ret != 0)
@@ -771,7 +773,7 @@ int _ramdisk_deallocate_block(struct Ramdisk* ramdisk, struct Block* block)
     }
 
 #ifdef DEBUG
-    PRINT("Ramdisk::deallocate_block: deallocated block # %d\n", index+OVERHEAD_BLOCKS);
+    PRINT("Ramdisk::deallocate_block: deallocated block # %d. %hd blocks free\n", index+OVERHEAD_BLOCKS, ramdisk->superblock.free_blocks);
 #endif
     return 1;
 }
@@ -785,14 +787,14 @@ int _ramdisk_allocate_inode(struct Ramdisk* ramdisk, enum NodeType type)
         PRINT("Ramdisk::allocate_inode: no more iNodes\n");
         return -1;
     }
-    ramdisk->superblock.free_inodes --;
     for(i=0; i<INODES; i++)
     {
         if(ramdisk->inodes[i].type == RAMDISK_UNALLOCATED)
         {
             ramdisk->inodes[i].type = type;
+	    ramdisk->superblock.free_inodes --;
 #ifdef DEBUG
-            PRINT("Ramdisk::allocate_inode: allocated inode # %d\n", i);
+            PRINT("Ramdisk::allocate_inode: allocated inode # %d. %hd inodes free\n", i, ramdisk->superblock.free_inodes);
 #endif
             return i;
         }
@@ -827,6 +829,7 @@ int _ramdisk_deallocate_inode(struct Ramdisk* ramdisk, int index)
     ramdisk->superblock.free_inodes ++;
     ramdisk->inodes[index].type = RAMDISK_UNALLOCATED;
     r_inode_init(&(ramdisk->inodes[index]));
+    PRINT("Ramdisk::deallocate_inode: deallocated inode # %d. %hd inodes free\n", index, ramdisk->superblock.free_inodes);
     return 0;
 }
 

@@ -196,9 +196,7 @@ struct Block* inode_add_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
                      iNode->indirectPointer[indirectIdx],
                      block);
         if(retval != blockIdx)
-            //if(retval < 0 || retval >= BLOCK_PTRS_PER_STORAGE_BLOCK)
         {
-            //@TODO deallocate block
             PRINT("***ERROR placing block in inode_add_block\n");
             return NULL;
         }
@@ -413,7 +411,7 @@ int inode_remove_block(struct IndexNode* iNode, struct Ramdisk* iRamDisk)
     }
 
 
-    //@TODO: Double Indirect pointers
+    //Double Indirect pointers
     entries_squared=BLOCK_PTRS_PER_STORAGE_BLOCK*BLOCK_PTRS_PER_STORAGE_BLOCK;
     blockIdx -= BLOCK_PTRS_PER_STORAGE_BLOCK * IndexNodeIndirectPointers;
     numDoublePointers = entries_squared * IndexNodeDoublePointers;
